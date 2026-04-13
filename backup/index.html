@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIGDA v2.0 — Système Intégré de Gestion de Distribution Ambulante</title>
+  <meta name="description" content="SIGDA v2.0 — Plateforme de gestion de distribution ambulante avec clôture journalière comptable manuelle certifiée." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-low":      "#f3f4f6",
+            "on-primary":                 "#ffffff",
+            "on-primary-fixed":           "#001b3f",
+            "surface-container":          "#edeef0",
+            "on-primary-container":       "#89a5dd",
+            "primary-fixed":              "#d7e2ff",
+            "on-tertiary-container":      "#4f3d00",
+            "on-tertiary":                "#ffffff",
+            "on-background":              "#191c1e",
+            "surface-tint":               "#415e91",
+            "on-primary-fixed-variant":   "#284678",
+            "on-tertiary-fixed-variant":  "#584400",
+            "tertiary-fixed":             "#ffe08e",
+            "on-surface-variant":         "#43474f",
+            "tertiary-container":         "#cea62b",
+            "on-secondary":               "#ffffff",
+            "tertiary":                   "#755b00",
+            "on-tertiary-fixed":          "#241a00",
+            "inverse-on-surface":         "#f0f1f3",
+            "secondary-container":        "#7fbafd",
+            "surface-variant":            "#e1e2e4",
+            "tertiary-fixed-dim":         "#ecc246",
+            "on-error-container":         "#93000a",
+            "inverse-surface":            "#2e3132",
+            "on-secondary-fixed":         "#001d36",
+            "on-secondary-container":     "#00497e",
+            "secondary-fixed":            "#d1e4ff",
+            "on-secondary-fixed-variant": "#00497d",
+            "surface":                    "#f8f9fb",
+            "surface-container-high":     "#e7e8ea",
+            "error":                      "#ba1a1a",
+            "outline-variant":            "#c4c6d0",
+            "error-container":            "#ffdad6",
+            "primary-fixed-dim":          "#abc7ff",
+            "primary-container":          "#1a3a6b",
+            "outline":                    "#747780",
+            "on-surface":                 "#191c1e",
+            "secondary":                  "#18619e",
+            "on-error":                   "#ffffff",
+            "surface-dim":                "#d9dadc",
+            "background":                 "#f8f9fb",
+            "surface-bright":             "#f8f9fb",
+            "inverse-primary":            "#abc7ff",
+            "surface-container-highest":  "#e1e2e4",
+            "secondary-fixed-dim":        "#9ecaff",
+            "primary":                    "#002451",
+            "surface-container-lowest":   "#ffffff",
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Inter"], body: ["Inter"], label: ["Inter"]
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Global CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <style>
+    /* Override to ensure Tailwind and custom styles coexist */
+    #sigda-app { min-height: 100vh; }
+
+    /* Splash screen */
+    #sigda-splash {
+      position: fixed; inset: 0; z-index: 99999;
+      background: linear-gradient(135deg, #002451 0%, #1A3A6B 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #sigda-splash.hidden { opacity: 0; visibility: hidden; }
+    .splash-logo { font-size: 3rem; font-weight: 900; color: white; letter-spacing: -0.04em; }
+    .splash-sub { font-size: 0.75rem; color: #abc7ff; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem; }
+    .splash-bar { width: 200px; height: 3px; background: rgba(255,255,255,0.15); border-radius: 100px; margin-top: 2.5rem; overflow: hidden; }
+    .splash-progress { height: 100%; background: #C9A227; border-radius: 100px; animation: splashLoad 1.2s ease forwards; }
+    @keyframes splashLoad { from { width:0% } to { width:100% } }
+
+    /* Ensure sidebar stays on top */
+    aside { z-index: 50 !important; }
+    header.fixed { z-index: 40 !important; }
+
+    /* Wizard overlay positioning */
+    #wizard-overlay {
+      position: fixed; inset: 0; z-index: 5000;
+      display: flex; align-items: center; justify-content: center;
+    }
+  </style>
+</head>
+
+<body class="bg-[#F3F4F6] font-body text-on-surface antialiased">
+
+  <!-- Splash Screen -->
+  <div id="sigda-splash">
+    <div style="text-align:center">
+      <div style="width:64px;height:64px;background:rgba(255,255,255,0.1);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem" >
+        <span class="material-symbols-outlined" style="color:#C9A227;font-size:2.5rem;font-variation-settings:'FILL' 1">inventory</span>
+      </div>
+      <div class="splash-logo">SIGDA v2.0</div>
+      <div class="splash-sub">Système Intégré de Gestion de Distribution Ambulante</div>
+      <div class="splash-bar"><div class="splash-progress"></div></div>
+      <p style="color:rgba(255,255,255,0.4);font-size:0.6875rem;margin-top:1.5rem;font-weight:600;letter-spacing:0.1em">Chargement du système comptable...</p>
+    </div>
+  </div>
+
+  <!-- App Root -->
+  <div id="sigda-app" style="display:none"></div>
+
+  <!-- ================================================================
+       Scripts — Order matters!
+       1. State (data + mutations)
+       2. Utils (formatters + UI helpers)
+       3. Pages (renderers)
+       4. App (router + layout) — must come last
+       ================================================================ -->
+
+  <!-- 1. State -->
+  <script src="js/state.js"></script>
+
+  <!-- 2. Utils -->
+  <script src="js/utils.js"></script>
+
+  <!-- 3. Pages -->
+  <script src="pages/dashboard.js"></script>
+  <script src="pages/stocks.js"></script>
+  <script src="pages/vendeurs.js"></script>
+  <script src="pages/caisse.js"></script>
+  <script src="pages/wizard.js"></script>
+  <script src="pages/network.js"></script>
+  <script src="pages/audit.js"></script>
+  <script src="pages/rapports.js"></script>
+
+  <!-- 4. App Router -->
+  <script src="js/app.js"></script>
+
+  <!-- Boot: Show splash then reveal pre-rendered app -->
+  <script>
+    // The DOMContentLoaded in app.js renders to #sigda-app immediately.
+    // We just hide the splash overlay after the animation completes.
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        var splash = document.getElementById('sigda-splash');
+        if (splash) splash.classList.add('hidden');
+        var app = document.getElementById('sigda-app');
+        if (app) app.style.display = '';
+      }, 1400);
+    });
+  </script>
+</body>
+</html>
