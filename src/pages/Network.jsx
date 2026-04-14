@@ -55,7 +55,7 @@ const Network = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#002451]">Réseau SIGDA — Vue Globale</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#002451]">Réseau SIGDA — Vue Globale</h2>
           <div className="flex items-center gap-2 mt-1">
             <div className="w-8 h-1 bg-[#C9A227] rounded-full"></div>
             <p className="text-sm text-slate-500 font-medium">Supervision multidimensionnelle des flux</p>
@@ -159,7 +159,7 @@ const Network = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             {state.network.sites.map(site => (
-              <div key={site.id} className={`bg-white p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow ${statusColors[site.statut] || 'border-l-4 border-slate-200'}`}>
+              <div key={site.id} className={`bg-white p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow ${statusColors[site.statut] || 'border-l-4 border-slate-200'}`}>
                 <div className="flex items-center gap-5">
                   <div className="w-14 h-14 bg-slate-50 rounded-xl flex flex-col items-center justify-center text-[#002451] border border-slate-100">
                     <span className="text-[10px] font-black leading-none">{site.id}</span>
@@ -170,8 +170,8 @@ const Network = () => {
                     <p className="text-xs text-slate-400">Responsable : {site.responsable}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-10">
-                  <div className="text-right">
+                <div className="flex flex-row md:flex-row items-center justify-between md:justify-end gap-4 md:gap-10 w-full md:w-auto">
+                  <div className="text-left md:text-right">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
                       {site.statut === 'EN_RETARD' ? 'Retard Cumulé' : site.statut === 'EN_CLOTURE' ? 'Progression' : 'Volume Jour'}
                     </div>

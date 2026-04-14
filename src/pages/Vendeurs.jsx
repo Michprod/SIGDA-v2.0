@@ -19,7 +19,7 @@ const Modal = ({ title, icon, children, onClose, footer }) => (
       </div>
       <div className="px-6 py-5">{children}</div>
       {footer && (
-        <div className="px-6 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex justify-end gap-3">
+        <div className="px-6 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
           {footer}
         </div>
       )}
@@ -65,12 +65,12 @@ const Vendeurs = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8">
-        <h2 className="text-3xl font-black tracking-tight text-[#002451]">Vendeurs & Réconciliation</h2>
+        <h2 className="text-2xl md:text-3xl font-black tracking-tight text-[#002451]">Vendeurs & Réconciliation</h2>
         <p className="text-slate-500 font-medium">Rapprochement des encaissements et calcul des rémunérations</p>
       </div>
 
       {/* KPI Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-[#C9A227]">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">CA Total Réconcilié</p>
           <p className="text-2xl font-black text-[#002451]">{fmtUSD(totalCA)}</p>
@@ -185,13 +185,13 @@ const Vendeurs = () => {
             <>
               <button 
                 onClick={() => setSelectedVendeur(null)} 
-                className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 Annuler
               </button>
               <button 
                 onClick={handleConfirmReconciliation} 
-                className="px-6 py-2.5 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white text-sm font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2"
+                className="w-full sm:w-auto justify-center px-6 py-2.5 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white text-sm font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2"
               >
                 <Icon name="task_alt" className="text-sm" fill={true} /> Valider & Clôturer Session
               </button>
@@ -208,7 +208,7 @@ const Vendeurs = () => {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 bg-blue-50 rounded-xl">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Encaissement Théorique</p>
                 <p className="text-2xl font-black text-[#002451]">{fmtUSD(selectedVendeur.caisseTheorique)}</p>

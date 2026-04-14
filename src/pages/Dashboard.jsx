@@ -29,7 +29,7 @@ const Dashboard = ({ onOpenWizard }) => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8">
-        <h2 className="text-3xl font-extrabold tracking-tight text-[#002451]">Tableau de Bord Journalier</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#002451]">Tableau de Bord Journalier</h2>
         <p className="text-slate-500 font-medium mt-1">Aperçu de la gestion du site — {state.periode.site}</p>
       </div>
 
@@ -208,7 +208,7 @@ const Dashboard = ({ onOpenWizard }) => {
       </div>
 
       {/* Floating status bar */}
-      <div className="fixed bottom-6 left-72 z-30 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg border border-slate-200 flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+      <div className="hidden md:flex fixed bottom-6 left-72 z-30 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg border border-slate-200 items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         Sync Cloud · OK · Il y a 2 min
       </div>

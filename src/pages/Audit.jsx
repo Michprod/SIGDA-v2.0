@@ -18,7 +18,7 @@ const Modal = ({ title, icon, children, onClose, footer }) => (
       </div>
       <div className="px-6 py-5">{children}</div>
       {footer && (
-        <div className="px-6 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex justify-end gap-3">
+        <div className="px-6 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
           {footer}
         </div>
       )}
@@ -68,12 +68,12 @@ const Audit = () => {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-[#FFF9F0] -m-8 p-8 min-h-screen">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-[#FFF9F0] -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start mb-10 gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-7 bg-[#C9A227] rounded-full"></div>
+            <div className="w-2 h-7 bg-[#C9A227] rounded-full flex-shrink-0"></div>
             <h2 className="text-2xl font-extrabold tracking-tight text-[#002451]">Journal d'Audit des Interventions Exceptionnelles</h2>
           </div>
           <p className="text-slate-500 text-sm max-w-2xl leading-relaxed">
@@ -95,7 +95,7 @@ const Audit = () => {
       {/* Main Layout */}
       <div className="grid grid-cols-12 gap-6">
         {/* Left: Metrics */}
-        <div className="col-span-12 lg:col-span-3 flex flex-col gap-5">
+        <div className="col-span-12 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-5">
           <div className="bg-white p-6 rounded-2xl shadow-sm border-b-2 border-[#002451]">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alertes 24h</p>
             <h3 className="text-4xl font-extrabold text-[#002451]">14</h3>
@@ -139,17 +139,17 @@ const Audit = () => {
 
         {/* Right: Table */}
         <div className="col-span-12 lg:col-span-9 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+          <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Flux d'Audit en Temps Réel</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => setIsModalOpen(true)}
                 disabled={['CLOTUREE', 'VERROUILLEE'].includes(state.periode.statut)}
-                className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50"
+                className="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50"
               >
                 <Icon name="add" className="text-sm" /> Nouvelle Entrée
               </button>
-              <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
+              <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors border border-slate-200 sm:border-transparent">
                 <Icon name="download" className="text-sm" />
               </button>
             </div>
@@ -237,8 +237,8 @@ const Audit = () => {
           onClose={() => setIsModalOpen(false)}
           footer={
             <>
-              <button onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Annuler</button>
-              <button form="audit-form" type="submit" className="px-6 py-2.5 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white text-sm font-bold rounded-xl shadow-lg">Enregistrer</button>
+              <button onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Annuler</button>
+              <button form="audit-form" type="submit" className="w-full sm:w-auto justify-center px-6 py-2.5 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white text-sm font-bold rounded-xl shadow-lg">Enregistrer</button>
             </>
           }
         >

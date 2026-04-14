@@ -361,25 +361,25 @@ const Stocks = () => {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-6 mb-8">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-[#002451]">Gestion des Stocks</h2>
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-[#002451]">Gestion des Stocks</h2>
           <p className="text-slate-500 font-medium mt-1">Cycle Circulaire · Distribution journalière et contrôle des flux</p>
         </div>
-        <div className="flex gap-2 p-1 bg-slate-100/50 rounded-xl w-fit">
+        <div className="flex gap-2 p-1 bg-slate-100/50 rounded-xl w-full md:w-fit overflow-x-auto scrollbar-hide">
           <button 
             onClick={() => setActiveTab('appro')} 
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'appro' ? 'bg-white text-[#002451] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 md:px-6 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'appro' ? 'bg-white text-[#002451] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Approvisionnement
           </button>
           <button 
             onClick={() => setActiveTab('dotation')} 
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'dotation' ? 'bg-white text-[#002451] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 md:px-6 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'dotation' ? 'bg-white text-[#002451] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Dotation Matinale
           </button>
           <button 
             onClick={() => setActiveTab('retours')} 
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'retours' ? 'bg-white text-[#002451] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 md:px-6 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'retours' ? 'bg-white text-[#002451] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Retours & Démarque
           </button>

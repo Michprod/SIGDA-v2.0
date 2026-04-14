@@ -19,7 +19,7 @@ const Modal = ({ title, icon, children, onClose, footer }) => (
       </div>
       <div className="px-6 py-5">{children}</div>
       {footer && (
-        <div className="px-6 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex justify-end gap-3">
+        <div className="px-6 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
           {footer}
         </div>
       )}
@@ -69,20 +69,20 @@ const Caisse = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
           <p className="text-[10px] uppercase font-black tracking-[0.2em] text-[#C9A227] mb-1">Module Trésorerie</p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#002451]">Journal de Caisse</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#002451]">Journal de Caisse</h2>
           <p className="text-slate-500 text-sm mt-1">Gestion des flux en temps réel — {state.periode.date}</p>
         </div>
         {!isCloture && (
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto">
             <button 
               onClick={() => setModalType('entree')}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2"
+              className="w-full sm:w-auto justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2"
             >
               <Icon name="add_circle" className="text-sm" /> Nouvelle Entrée
             </button>
             <button 
               onClick={() => setModalType('sortie')}
-              className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2"
+              className="w-full sm:w-auto justify-center px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2"
             >
               <Icon name="remove_circle" className="text-sm" /> Sortie de Caisse
             </button>
@@ -91,7 +91,7 @@ const Caisse = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-slate-300">
           <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2">Solde Initial</p>
           <div className="flex items-baseline gap-2">
@@ -260,14 +260,14 @@ const Caisse = () => {
             <>
               <button 
                 onClick={() => setModalType(null)}
-                className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
               >
                 Annuler
               </button>
               <button 
                 form="tx-form"
                 type="submit"
-                className={`px-6 py-2.5 text-white text-sm font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2 ${
+                className={`w-full sm:w-auto justify-center px-6 py-2.5 text-white text-sm font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2 ${
                   modalType === 'entree' ? 'bg-emerald-600' : 'bg-red-600'
                 }`}
               >

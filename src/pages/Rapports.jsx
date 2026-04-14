@@ -23,12 +23,12 @@ const Rapports = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8">
-        <h2 className="text-3xl font-black tracking-tight text-[#002451]">Rapports & Archives</h2>
+        <h2 className="text-2xl md:text-3xl font-black tracking-tight text-[#002451]">Rapports & Archives</h2>
         <p className="text-slate-500 font-medium mt-1">Documents certifiés de la gestion journalière</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-[#1A3A6B]">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rapports Totaux</p>
           <p className="text-3xl font-black text-[#002451]">{state.rapports.length}</p>
@@ -56,15 +56,15 @@ const Rapports = () => {
 
       {/* Rapport actuel si clôturé */}
       {state.periode.statut === 'CLOTUREE' && (
-        <div className="mb-6 p-5 rounded-xl border-l-4 border-emerald-500 bg-emerald-50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Icon name="verified" className="text-emerald-600 text-2xl" fill={true} />
+        <div className="mb-6 p-4 md:p-5 rounded-xl border-l-4 border-emerald-500 bg-emerald-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <Icon name="verified" className="text-emerald-600 text-2xl mt-1 sm:mt-0" fill={true} />
             <div>
-              <p className="font-bold text-emerald-800">Journée du {state.periode.date} clôturée et scellée</p>
+              <p className="font-bold text-emerald-800 text-sm md:text-base">Journée du {state.periode.date} clôturée et scellée</p>
               <p className="text-xs text-emerald-600">Le rapport est disponible ci-dessous.</p>
             </div>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
+          <button className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
             <Icon name="download" className="text-sm" /> Télécharger PDF
           </button>
         </div>
