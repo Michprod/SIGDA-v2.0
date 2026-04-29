@@ -1,0 +1,340 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--sidebar:#1A3A6B;--sidebar-hover:#15305a;--sidebar-active:#0f2548;--blue:#2D6FAD;--green:#2E7D52;--gold:#C9A227;--red:#C0392B;--orange:#E67E22;--bg:#F3F4F6;--white:#fff;--text:#1F2937;--muted:#6B7280;--border:#E5E7EB;}
+.app{display:flex;height:680px;font-family:var(--font-sans);background:var(--bg);font-size:14px;color:var(--text);}
+
+/* SIDEBAR */
+.sidebar{width:200px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;}
+.sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-name{font-size:15px;font-weight:600;color:#fff;letter-spacing:.3px;}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;}
+.sidebar-site{padding:10px 16px;background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.06);}
+.site-label{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;}
+.site-name{font-size:13px;color:rgba(255,255,255,.85);margin-top:2px;font-weight:500;}
+.nav-section{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.5px;padding:14px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.65);font-size:13px;transition:background .12s,color .12s;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+.nav-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:rgba(255,255,255,.5);}
+.nav-item .ico{font-size:15px;width:18px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;}
+.nav-sep{height:1px;background:rgba(255,255,255,.07);margin:8px 16px;}
+.sidebar-footer{margin-top:auto;padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);}
+.user-row{display:flex;align-items:center;gap:8px;}
+.user-av{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;}
+.user-name{font-size:12px;color:rgba(255,255,255,.7);}
+.user-role{font-size:10px;color:rgba(255,255,255,.35);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.page-title{font-size:15px;font-weight:600;color:var(--text);}
+.period-info{font-size:12px;color:var(--muted);}
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;}
+.badge-open{background:#DCFCE7;color:#166534;}
+.badge-closing{background:#FEF3C7;color:#92400E;}
+.badge-closed{background:#DBEAFE;color:#1E40AF;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.icon-btn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:18px 20px;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+.kpi-val{font-size:22px;font-weight:600;color:var(--text);margin:4px 0 2px;}
+.kpi-sub{font-size:11px;color:var(--muted);}
+.kpi-sub.up{color:var(--green);}
+.kpi-sub.down{color:var(--red);}
+.kpi-sub.warn{color:var(--orange);}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.card-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:13px;font-weight:600;color:var(--text);}
+.card-sub{font-size:11px;color:var(--muted);}
+.card-body{padding:14px 16px;}
+
+/* CHECKLIST */
+.cl-progress{height:5px;background:var(--border);border-radius:3px;margin-bottom:14px;overflow:hidden;}
+.cl-bar{height:100%;border-radius:3px;background:var(--green);transition:width .4s;}
+.cl-item{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.cl-item:last-child{border-bottom:none;}
+.cl-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:1px;}
+.ic-ok{background:#DCFCE7;color:#166534;}
+.ic-ko{background:#FEE2E2;color:#991B1B;}
+.ic-warn{background:#FEF3C7;color:#92400E;}
+.cl-text{font-size:12px;color:var(--text);line-height:1.4;flex:1;}
+.cl-mod{font-size:10px;color:var(--muted);margin-top:1px;}
+.cl-footer{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:background .12s;}
+.btn-primary{background:var(--sidebar);color:#fff;}
+.btn-primary:hover{background:var(--sidebar-hover);}
+.btn-disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+.btn-outline{background:var(--white);color:var(--text);border:1px solid var(--border);}
+
+/* ACTIVITY */
+.act-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+.act-item:last-child{border-bottom:none;}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.act-content{flex:1;}
+.act-text{font-size:12px;color:var(--text);line-height:1.4;}
+.act-time{font-size:10px;color:var(--muted);margin-top:2px;}
+.act-dot.green{background:var(--green);}
+.act-dot.blue{background:var(--blue);}
+.act-dot.orange{background:var(--orange);}
+.act-dot.red{background:var(--red);}
+
+/* VENDOR TABLE */
+.vtable{width:100%;border-collapse:collapse;font-size:12px;}
+.vtable th{text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500;}
+.vtable td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);}
+.vtable tr:last-child td{border-bottom:none;}
+.vtable tr:nth-child(even) td{background:#F9FAFB;}
+.sess-badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;}
+.sess-recon{background:#DCFCE7;color:#166534;}
+.sess-wait{background:#FEE2E2;color:#991B1B;}
+.sess-part{background:#FEF3C7;color:#92400E;}
+
+/* ALERT STRIP */
+.alert-strip{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;margin-bottom:16px;font-size:12px;}
+.alert-warn{background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;}
+.alert-strip .alert-ico{font-size:14px;}
+</style>
+
+<div class="app">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-name">SIGDA</div>
+    <div class="logo-sub">Gestion Distribution Ambulante</div>
+  </div>
+  <div class="sidebar-site">
+    <div class="site-label">Point de vente</div>
+    <div class="site-name">Site Nord — Lubumbashi</div>
+  </div>
+  <div style="overflow-y:auto;flex:1;">
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" onclick="nav(this,'dashboard')"><span class="ico">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="nav(this,'period')"><span class="ico">📅</span> Période en cours</div>
+    <div class="nav-sep"></div>
+    <div class="nav-section">Opérations</div>
+    <div class="nav-item" onclick="nav(this,'stocks')"><span class="ico">📦</span> Stocks</div>
+    <div class="nav-item" onclick="nav(this,'vendors')"><span class="ico">🧑‍💼</span> Vendeurs <span class="nav-badge">2</span></div>
+    <div class="nav-item" onclick="nav(this,'cash')"><span class="ico">💰</span> Caisse</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="nav(this,'closure')"><span class="ico">⚙️</span> Clôture journalière</div>
+    <div class="nav-item" onclick="nav(this,'history')"><span class="ico">📋</span> Historique</div>
+    <div class="nav-sep"></div>
+    <div class="nav-section">Super Admin</div>
+    <div class="nav-item" onclick="nav(this,'sites')"><span class="ico">🏢</span> Tous les sites</div>
+    <div class="nav-item" onclick="nav(this,'audit')"><span class="ico">🔓</span> Journal audit</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="user-av">KM</div>
+      <div>
+        <div class="user-name">K. Mwamba</div>
+        <div class="user-role">Administrateur local</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="page-title" id="page-title">Dashboard</span>
+      <span class="period-info">Mardi 27 Avril 2026</span>
+      <span class="status-badge badge-open" id="period-badge">⬤ Journée OUVERTE</span>
+    </div>
+    <div class="topbar-right">
+      <div class="icon-btn" title="Notifications">🔔</div>
+      <div class="icon-btn" title="Aide">❓</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD CONTENT -->
+  <div class="content" id="main-content">
+    <div class="alert-strip alert-warn" id="alert-strip">
+      <span class="alert-ico">⚠️</span>
+      <strong>2 sessions vendeurs</strong> en attente de réconciliation — clôture bloquée tant qu'elles ne sont pas traitées.
+      <span style="margin-left:auto;cursor:pointer;text-decoration:underline;" onclick="document.getElementById('alert-strip').style.display='none'">Ignorer</span>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">CA du jour</div>
+        <div class="kpi-val">487 $</div>
+        <div class="kpi-sub up">↑ +12% vs hier</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Vendeurs réconciliés</div>
+        <div class="kpi-val">4 <span style="font-size:14px;color:var(--muted);font-weight:400;">/ 6</span></div>
+        <div class="kpi-sub warn">2 sessions en attente</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Stock disponible</div>
+        <div class="kpi-val">142 <span style="font-size:14px;color:var(--muted);font-weight:400;">u.</span></div>
+        <div class="kpi-sub">Yaourt nature · Jus mangue</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Solde caisse</div>
+        <div class="kpi-val">1 240 $</div>
+        <div class="kpi-sub">Théorique — non arrêté</div>
+      </div>
+    </div>
+
+    <!-- TWO COLUMNS -->
+    <div class="two-col">
+      <!-- CHECKLIST -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Prêt pour la clôture ?</div>
+            <div class="card-sub" id="cl-count">7 / 9 conditions satisfaites</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="cl-progress"><div class="cl-bar" id="cl-bar" style="width:77%"></div></div>
+          <div id="cl-list">
+            <div class="cl-item" onclick="toggleCl(0)">
+              <div class="cl-icon ic-ok" id="cl0">✓</div>
+              <div><div class="cl-text">Dotations matinales complètes</div><div class="cl-mod">Stocks</div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(1)">
+              <div class="cl-icon ic-ok" id="cl1">✓</div>
+              <div><div class="cl-text">Retours invendus enregistrés</div><div class="cl-mod">Stocks</div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(2)">
+              <div class="cl-icon ic-ok" id="cl2">✓</div>
+              <div><div class="cl-text">Bilan stock équilibré</div><div class="cl-mod">Stocks</div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(3)">
+              <div class="cl-icon ic-ko" id="cl3">✗</div>
+              <div><div class="cl-text">Toutes sessions RECONCILIEE</div><div class="cl-mod">Vendeurs — <strong style="color:var(--red)">2 bloquantes</strong></div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(4)">
+              <div class="cl-icon ic-ok" id="cl4">✓</div>
+              <div><div class="cl-text">Écarts vendeurs confirmés</div><div class="cl-mod">Vendeurs</div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(5)">
+              <div class="cl-icon ic-ko" id="cl5">✗</div>
+              <div><div class="cl-text">Solde physique caisse saisi</div><div class="cl-mod">Caisse — <strong style="color:var(--red)">à saisir</strong></div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(6)">
+              <div class="cl-icon ic-ok" id="cl6">✓</div>
+              <div><div class="cl-text">Écart global caisse justifié</div><div class="cl-mod">Caisse</div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(7)">
+              <div class="cl-icon ic-ok" id="cl7">✓</div>
+              <div><div class="cl-text">Opérations Hors-Produit saisies</div><div class="cl-mod">Caisse</div></div>
+            </div>
+            <div class="cl-item" onclick="toggleCl(8)">
+              <div class="cl-icon ic-warn" id="cl8">!</div>
+              <div><div class="cl-text">Provisions gelées confirmées</div><div class="cl-mod">Caisse — <strong style="color:var(--orange)">1 en attente</strong></div></div>
+            </div>
+          </div>
+          <div class="cl-footer">
+            <span style="font-size:11px;color:var(--muted);" id="cl-foot">2 bloquante(s) restante(s)</span>
+            <button class="btn btn-disabled" id="cl-btn" onclick="sendPrompt('Décris le wizard de clôture en 5 étapes')">Initier la clôture</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <!-- VENDEURS -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Sessions vendeurs</div>
+            <span style="font-size:11px;color:var(--blue);cursor:pointer;">Voir tout →</span>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <table class="vtable">
+              <thead><tr><th>Vendeur</th><th>Dotation</th><th>CA</th><th>Statut</th></tr></thead>
+              <tbody>
+                <tr><td>A. Kabila</td><td>40 u.</td><td>38 $</td><td><span class="sess-badge sess-recon">Réconcilié</span></td></tr>
+                <tr><td>B. Mutombo</td><td>35 u.</td><td>–</td><td><span class="sess-badge sess-wait">En attente</span></td></tr>
+                <tr><td>C. Ilunga</td><td>45 u.</td><td>42 $</td><td><span class="sess-badge sess-recon">Réconcilié</span></td></tr>
+                <tr><td>D. Kalala</td><td>30 u.</td><td>–</td><td><span class="sess-badge sess-wait">En attente</span></td></tr>
+                <tr><td>E. Tshiama</td><td>38 u.</td><td>36 $</td><td><span class="sess-badge sess-recon">Réconcilié</span></td></tr>
+                <tr><td>F. Ngoyi</td><td>42 u.</td><td>41 $</td><td><span class="sess-badge sess-recon">Réconcilié</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ACTIVITY -->
+        <div class="card" style="flex:1;">
+          <div class="card-head">
+            <div class="card-title">Activité récente</div>
+          </div>
+          <div class="card-body">
+            <div class="act-item"><div class="act-dot green"></div><div class="act-content"><div class="act-text">Session C. Ilunga réconciliée — 42 $ encaissés</div><div class="act-time">19h14</div></div></div>
+            <div class="act-item"><div class="act-dot green"></div><div class="act-content"><div class="act-text">Session A. Kabila réconciliée — 38 $ encaissés</div><div class="act-time">18h52</div></div></div>
+            <div class="act-item"><div class="act-dot blue"></div><div class="act-content"><div class="act-text">Approvisionnement saisi — 80 u. Yaourt nature</div><div class="act-time">07h30</div></div></div>
+            <div class="act-item"><div class="act-dot blue"></div><div class="act-content"><div class="act-text">6 dotations matinales attribuées</div><div class="act-time">08h15</div></div></div>
+            <div class="act-item"><div class="act-dot orange"></div><div class="act-content"><div class="act-text">Opération Hors-Produit — Carburant 15 $</div><div class="act-time">10h00</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// NAV
+function nav(el, page) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  const titles = {
+    dashboard:'Dashboard', period:'Période en cours', stocks:'Stocks',
+    vendors:'Vendeurs', cash:'Caisse', closure:'Clôture journalière',
+    history:'Historique des périodes', sites:'Tous les sites', audit:'Journal d\'audit'
+  };
+  document.getElementById('page-title').textContent = titles[page] || page;
+  if (page === 'vendors') sendPrompt('Montre-moi la page Vendeurs avec les sessions et la réconciliation');
+  if (page === 'closure') sendPrompt('Montre-moi le wizard de clôture en 5 étapes');
+  if (page === 'stocks') sendPrompt('Montre-moi la page Stocks avec dotations et retours');
+  if (page === 'cash') sendPrompt('Montre-moi la page Caisse avec les flux');
+}
+
+// CHECKLIST
+const clStates = ['ok','ok','ok','ko','ok','ko','ok','ok','warn'];
+function toggleCl(i) {
+  clStates[i] = clStates[i]==='ok' ? 'ko' : 'ok';
+  renderCl();
+}
+function renderCl() {
+  const icons = {ok:'✓',ko:'✗',warn:'!'};
+  const cls = {ok:'ic-ok',ko:'ic-ko',warn:'ic-warn'};
+  const labels = ['Dotations matinales complètes','Retours invendus enregistrés','Bilan stock équilibré','Toutes sessions RECONCILIEE','Écarts vendeurs confirmés','Solde physique caisse saisi','Écart global caisse justifié','Opérations Hors-Produit saisies','Provisions gelées confirmées'];
+  clStates.forEach((s,i) => {
+    const el = document.getElementById('cl'+i);
+    if(el){ el.textContent = icons[s]; el.className = 'cl-icon '+cls[s]; }
+  });
+  const ok = clStates.filter(s=>s==='ok').length;
+  const blocked = clStates.filter(s=>s==='ko').length;
+  document.getElementById('cl-count').textContent = ok+' / 9 conditions satisfaites';
+  document.getElementById('cl-bar').style.width = Math.round(ok/9*100)+'%';
+  const foot = document.getElementById('cl-foot');
+  const btn = document.getElementById('cl-btn');
+  if(blocked===0){
+    foot.textContent = '✓ Prêt pour la clôture';
+    foot.style.color = 'var(--green)';
+    btn.className = 'btn btn-primary';
+    btn.textContent = 'Initier la clôture →';
+  } else {
+    foot.textContent = blocked+' bloquante(s) restante(s)';
+    foot.style.color = 'var(--muted)';
+    btn.className = 'btn btn-disabled';
+    btn.textContent = 'Initier la clôture';
+  }
+}
+renderCl();
+</script>

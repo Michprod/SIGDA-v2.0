@@ -1,0 +1,427 @@
+
+<style>
+  :root { --blue:#1A3A6B; --blue2:#2D6FAD; --green:#2E7D52; --gold:#C9A227; --red:#C0392B; --orange:#E67E22; --amber:#92400E; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: var(--font-sans); }
+  .wrap { padding:1rem 0; }
+  .tabs { display:flex; gap:6px; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .tab { padding:6px 14px; font-size:13px; border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); cursor:pointer; color:var(--color-text-secondary); background:var(--color-background-primary); transition:all .15s; }
+  .tab.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .tab:hover:not(.active) { background:var(--color-background-secondary); }
+  .panel { display:none; }
+  .panel.active { display:block; }
+
+  /* State machine */
+  .states { display:flex; flex-direction:column; gap:0; }
+  .state-row { display:flex; align-items:stretch; gap:0; }
+  .state-box { border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-lg); padding:14px 18px; flex:1; cursor:pointer; transition:all .15s; }
+  .state-box:hover { border-color:var(--color-border-primary); }
+  .state-box.selected { border-width:1.5px; }
+  .arrow-col { display:flex; align-items:center; justify-content:center; width:48px; flex-shrink:0; }
+  .arrow-down { display:flex; flex-direction:column; align-items:center; color:var(--color-text-tertiary); font-size:18px; }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:500; margin-bottom:8px; }
+  .badge-green { background:#DCFCE7; color:#166534; }
+  .badge-amber { background:#FEF3C7; color:#92400E; }
+  .badge-blue { background:#DBEAFE; color:#1E40AF; }
+  .badge-gray { background:#F3F4F6; color:#374151; }
+  .state-title { font-size:15px; font-weight:500; color:var(--color-text-primary); }
+  .state-desc { font-size:13px; color:var(--color-text-secondary); margin-top:4px; line-height:1.5; }
+  .detail-box { margin-top:1rem; padding:1rem 1.25rem; border-radius:var(--border-radius-lg); border:0.5px solid var(--color-border-secondary); background:var(--color-background-secondary); font-size:13px; line-height:1.7; color:var(--color-text-secondary); }
+  .detail-box h4 { font-size:13px; font-weight:500; color:var(--color-text-primary); margin-bottom:6px; }
+  .detail-box ul { padding-left:1rem; }
+  .detail-box li { margin-bottom:3px; }
+
+  /* Timeline */
+  .timeline { position:relative; padding-left:0; }
+  .tl-item { display:grid; grid-template-columns:90px 24px 1fr; gap:0 12px; margin-bottom:2px; align-items:start; cursor:pointer; }
+  .tl-time { font-size:12px; color:var(--color-text-tertiary); padding-top:14px; text-align:right; }
+  .tl-line-col { display:flex; flex-direction:column; align-items:center; }
+  .tl-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; margin-top:16px; border:2px solid transparent; }
+  .tl-vline { width:1px; flex:1; min-height:8px; background:var(--color-border-tertiary); }
+  .tl-card { margin:6px 0; padding:10px 14px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-primary); transition:all .15s; }
+  .tl-card:hover { border-color:var(--color-border-secondary); }
+  .tl-card.tl-open .tl-dot { background:#2E7D52; border-color:#2E7D52; }
+  .tl-card.tl-closing .tl-dot { background:#E67E22; border-color:#E67E22; }
+  .tl-card.tl-closed .tl-dot { background:#2D6FAD; border-color:#2D6FAD; }
+  .tl-status { font-size:11px; font-weight:500; margin-bottom:4px; }
+  .tl-status.open { color:#2E7D52; }
+  .tl-status.closing { color:#E67E22; }
+  .tl-status.closed { color:#2D6FAD; }
+  .tl-name { font-size:14px; font-weight:500; color:var(--color-text-primary); }
+  .tl-sub { font-size:12px; color:var(--color-text-secondary); margin-top:2px; }
+  .tl-tables { font-size:11px; color:var(--color-text-tertiary); margin-top:5px; font-style:italic; }
+
+  /* Checklist */
+  .check-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media(max-width:520px){ .check-grid { grid-template-columns:1fr; } }
+  .check-item { padding:10px 14px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-primary); display:flex; align-items:flex-start; gap:10px; cursor:pointer; transition:all .15s; }
+  .check-item:hover { border-color:var(--color-border-secondary); }
+  .check-icon { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:12px; margin-top:1px; }
+  .check-ok { background:#DCFCE7; color:#166534; }
+  .check-block { background:#FEE2E2; color:#991B1B; }
+  .check-warn { background:#FEF3C7; color:#92400E; }
+  .check-text { font-size:13px; color:var(--color-text-primary); line-height:1.4; }
+  .check-module { font-size:11px; color:var(--color-text-tertiary); margin-top:2px; }
+  .cta-bar { margin-top:1rem; padding:12px 16px; border-radius:var(--border-radius-md); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .cta-bar.ready { background:#DCFCE7; border:0.5px solid #86EFAC; }
+  .cta-bar.blocked { background:#FEE2E2; border:0.5px solid #FCA5A5; }
+  .cta-label { font-size:13px; font-weight:500; }
+  .cta-label.ready-text { color:#166534; }
+  .cta-label.blocked-text { color:#991B1B; }
+  .cta-btn { padding:7px 16px; border-radius:var(--border-radius-md); font-size:13px; font-weight:500; border:none; cursor:pointer; }
+  .btn-ready { background:#1A3A6B; color:#fff; }
+  .btn-blocked { background:#D1D5DB; color:#9CA3AF; cursor:not-allowed; }
+  .counter { font-size:13px; color:var(--color-text-secondary); margin-bottom:.75rem; }
+
+  /* Modules */
+  .mod-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media(max-width:520px){ .mod-grid { grid-template-columns:1fr; } }
+  .mod-card { border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-lg); padding:14px 16px; cursor:pointer; transition:all .15s; }
+  .mod-card:hover { border-color:var(--color-border-primary); background:var(--color-background-secondary); }
+  .mod-card.selected { border-width:1.5px; }
+  .mod-icon { width:32px; height:32px; border-radius:var(--border-radius-md); display:flex; align-items:center; justify-content:center; margin-bottom:8px; font-size:16px; }
+  .mod-name { font-size:14px; font-weight:500; color:var(--color-text-primary); margin-bottom:4px; }
+  .mod-desc { font-size:12px; color:var(--color-text-secondary); line-height:1.5; }
+  .mod-tables { font-size:11px; color:var(--color-text-tertiary); margin-top:6px; }
+  .flow-arrow { text-align:center; color:var(--color-text-tertiary); font-size:18px; margin:4px 0; }
+  .selected-blue { border-color:#2D6FAD !important; }
+  .selected-green { border-color:#2E7D52 !important; }
+  .selected-gold { border-color:#C9A227 !important; }
+  .selected-red { border-color:#C0392B !important; }
+
+  .rule-box { margin-top:1rem; padding:12px 14px; border-radius:var(--border-radius-md); border-left:3px solid var(--blue); background:var(--color-background-secondary); font-size:13px; color:var(--color-text-secondary); line-height:1.6; }
+  .rule-box strong { color:var(--color-text-primary); font-weight:500; }
+  .step-badges { display:flex; gap:6px; flex-wrap:wrap; margin-top:.75rem; }
+  .step-badge { padding:4px 10px; border-radius:20px; font-size:12px; border:0.5px solid var(--color-border-secondary); color:var(--color-text-secondary); }
+</style>
+
+<div class="wrap">
+<div class="tabs">
+  <div class="tab active" onclick="showPanel('states')">Machine à états</div>
+  <div class="tab" onclick="showPanel('timeline')">Journée type</div>
+  <div class="tab" onclick="showPanel('checklist')">Prérequis clôture</div>
+  <div class="tab" onclick="showPanel('modules')">Architecture modules</div>
+</div>
+
+<!-- PANEL 1: STATE MACHINE -->
+<div id="panel-states" class="panel active">
+  <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem;line-height:1.6;">Cliquez sur un état pour voir les règles de transition et les contraintes associées.</div>
+  <div class="states">
+    <div class="state-row">
+      <div class="state-box" onclick="selectState('open')" id="s-open">
+        <span class="badge badge-green">⬤ OUVERTE</span>
+        <div class="state-title">Journée en cours</div>
+        <div class="state-desc">Toutes les saisies autorisées. Stocks, vendeurs, caisse.</div>
+      </div>
+    </div>
+    <div class="arrow-col" style="align-self:center;padding:4px 0 4px 0;display:flex;justify-content:center;width:100%;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--color-text-tertiary);font-size:12px;">
+        <div style="width:1px;height:16px;background:var(--color-border-tertiary);"></div>
+        <span>Prérequis satisfaits</span>
+        <div style="color:var(--color-text-tertiary);font-size:16px;">↓</div>
+      </div>
+    </div>
+    <div class="state-row">
+      <div class="state-box" onclick="selectState('closing')" id="s-closing">
+        <span class="badge badge-amber">⏳ EN_CLÔTURE</span>
+        <div class="state-title">Clôture en cours</div>
+        <div class="state-desc">Saisies suspendues. Wizard 5 étapes actif.</div>
+      </div>
+    </div>
+    <div class="arrow-col" style="align-self:center;padding:4px 0 4px 0;display:flex;justify-content:center;width:100%;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--color-text-tertiary);font-size:12px;">
+        <div style="width:1px;height:16px;background:var(--color-border-tertiary);"></div>
+        <span>Signature admin + ouverture J+1 atomique</span>
+        <div style="font-size:16px;">↓</div>
+      </div>
+    </div>
+    <div class="state-row">
+      <div class="state-box" onclick="selectState('closed')" id="s-closed">
+        <span class="badge badge-blue">🔓 CLÔTURÉE</span>
+        <div class="state-title">Protégée — lecture seule</div>
+        <div class="state-desc">PDF archivé. Aucune modification sans déverrouillage Super Admin.</div>
+      </div>
+    </div>
+    <div class="arrow-col" style="align-self:center;padding:4px 0 4px 0;display:flex;justify-content:center;width:100%;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--color-text-tertiary);font-size:12px;">
+        <div style="width:1px;height:16px;background:var(--color-border-tertiary);"></div>
+        <span>Délai de rétention atteint</span>
+        <div style="font-size:16px;">↓</div>
+      </div>
+    </div>
+    <div class="state-row">
+      <div class="state-box" onclick="selectState('locked')" id="s-locked">
+        <span class="badge badge-gray">🔒 VERROUILLÉE</span>
+        <div class="state-title">Archivée — audit uniquement</div>
+        <div class="state-desc">Lecture seule définitive. Export PDF uniquement.</div>
+      </div>
+    </div>
+  </div>
+  <div id="state-detail" class="detail-box" style="display:none;"></div>
+</div>
+
+<!-- PANEL 2: TIMELINE -->
+<div id="panel-timeline" class="panel">
+  <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem;">Déroulé chronologique d'une journée d'exploitation. Les tables SQL impactées sont indiquées pour chaque phase.</div>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-time">00h01</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#2E7D52;border-color:#2E7D52;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status open">OUVERTE</div><div class="tl-name">Ouverture automatique (J+1)</div><div class="tl-sub">Créée par la clôture de J-1. Stock initial et solde d'ouverture reportés.</div><div class="tl-tables">accounting_periods · daily_stock_snapshots · cash_snapshots</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">06h–08h</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#2E7D52;border-color:#2E7D52;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status open">OUVERTE</div><div class="tl-name">Approvisionnement</div><div class="tl-sub">Saisie du bon de livraison. Incrémente le stock disponible du site.</div><div class="tl-tables">stock_entries · daily_stock_snapshots.supply_qty</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">07h30–09h</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#2E7D52;border-color:#2E7D52;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status open">OUVERTE</div><div class="tl-name">Dotation matinale</div><div class="tl-sub">Attribution qty/vendeur/produit. Crée les sessions au statut EN_ATTENTE.</div><div class="tl-tables">vendor_daily_sessions (qty_issued, status=EN_ATTENTE)</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">09h–17h</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#2E7D52;border-color:#2E7D52;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status open">OUVERTE</div><div class="tl-name">Tournée de vente</div><div class="tl-sub">Vendeurs en activité. Checklist de clôture se met à jour en temps réel.</div><div class="tl-tables">Aucune écriture directe</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">17h–19h</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#2E7D52;border-color:#2E7D52;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status open">OUVERTE</div><div class="tl-name">Réconciliation vendeurs</div><div class="tl-sub">Saisie retours + encaissement réel. Sessions passent à RECONCILIEE.</div><div class="tl-tables">vendor_daily_sessions (qty_returned, actual_cash, status)</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">18h–20h</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#2E7D52;border-color:#2E7D52;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status open">OUVERTE</div><div class="tl-name">Saisie Hors-Produit</div><div class="tl-sub">Frais fixes, provisions, opérations de caisse. Confirmation des gels de fonds.</div><div class="tl-tables">cash_transactions · frozen_funds</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">20h–21h</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#E67E22;border-color:#E67E22;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status closing">EN_CLÔTURE</div><div class="tl-name">Initiation clôture + Étapes 01–04</div><div class="tl-sub">Admin vérifie 9/9 conditions. Saisies suspendues. Cristallisation stocks, vendeurs.</div><div class="tl-tables">closure_checklist_log · daily_stock_snapshots.is_finalized · vendor_daily_sessions.is_finalized</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">21h</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#E67E22;border-color:#E67E22;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status closing">EN_CLÔTURE</div><div class="tl-name">Arrêté de caisse physique (Étape 03)</div><div class="tl-sub">Saisie solde physique compté. Calcul et régularisation de l'écart éventuel.</div><div class="tl-tables">accounting_periods.physical_cash_balance · cash_snapshots · cash_transactions (régul.)</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">21h15</div>
+      <div class="tl-line-col"><div class="tl-dot" style="background:#2D6FAD;border-color:#2D6FAD;margin-top:16px;width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div><div class="tl-vline"></div></div>
+      <div class="tl-card"><div class="tl-status closed">CLÔTURÉE</div><div class="tl-name">Signature + Ouverture J+1 (Étape 05)</div><div class="tl-sub">Mot de passe admin. Transaction atomique : clôture J + création J+1 avec reports.</div><div class="tl-tables">accounting_periods (CLOTUREE) · accounting_periods J+1 (OUVERTE) · daily_stock_snapshots J+1 · cash_snapshots J+1</div></div>
+    </div>
+  </div>
+  <div class="rule-box"><strong>Règle fondamentale :</strong> Aucun batch nocturne. La journée J+1 n'existe que si la clôture de J a été signée par un administrateur authentifié. C'est la garantie qu'aucune donnée n'est jamais incomplète à l'ouverture.</div>
+</div>
+
+<!-- PANEL 3: CHECKLIST -->
+<div id="panel-checklist" class="panel">
+  <div id="check-counter" class="counter"></div>
+  <div class="check-grid" id="check-grid"></div>
+  <div id="check-cta" class="cta-bar" style="margin-top:1rem;"></div>
+  <div style="margin-top:1rem;font-size:12px;color:var(--color-text-tertiary);line-height:1.6;">Cliquez sur un prérequis pour basculer son état. En production, chaque condition est évaluée en temps réel depuis la base de données.</div>
+</div>
+
+<!-- PANEL 4: MODULES -->
+<div id="panel-modules" class="panel">
+  <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem;">Cliquez sur un module pour voir ses tables, règles métier et dépendances.</div>
+  <div class="mod-grid">
+    <div class="mod-card" onclick="selectMod('periods')" id="m-periods">
+      <div class="mod-icon" style="background:#DBEAFE;">📅</div>
+      <div class="mod-name">Périodes comptables</div>
+      <div class="mod-desc">Table pivot centrale. Toute donnée est rattachée à une période par period_id.</div>
+      <div class="mod-tables">accounting_periods</div>
+    </div>
+    <div class="mod-card" onclick="selectMod('stocks')" id="m-stocks">
+      <div class="mod-icon" style="background:#DCFCE7;">📦</div>
+      <div class="mod-name">Stocks circulants</div>
+      <div class="mod-desc">Cycle : appro → dotation → vente → retour → démarque → report.</div>
+      <div class="mod-tables">daily_stock_snapshots · stock_entries</div>
+    </div>
+    <div class="mod-card" onclick="selectMod('vendors')" id="m-vendors">
+      <div class="mod-icon" style="background:#FEF3C7;">🧑‍💼</div>
+      <div class="mod-name">Vendeurs & Paie</div>
+      <div class="mod-desc">Sessions journalières, réconciliation, commissionnement automatique.</div>
+      <div class="mod-tables">vendor_daily_sessions · vendors</div>
+    </div>
+    <div class="mod-card" onclick="selectMod('cash')" id="m-cash">
+      <div class="mod-icon" style="background:#FEE2E2;">💰</div>
+      <div class="mod-name">Caisse paramétrée</div>
+      <div class="mod-desc">Flux Produit / Hors-Produit, arrêté physique, gels de provisions.</div>
+      <div class="mod-tables">cash_transactions · cash_snapshots · frozen_funds</div>
+    </div>
+    <div class="mod-card" onclick="selectMod('closure')" id="m-closure">
+      <div class="mod-icon" style="background:#F3F0FF;">⚙️</div>
+      <div class="mod-name">Moteur de clôture</div>
+      <div class="mod-desc">Wizard 5 étapes, checklist temps réel, transaction atomique, PDF archivé.</div>
+      <div class="mod-tables">closure_checklist_log · admin_unlock_log</div>
+    </div>
+    <div class="mod-card" onclick="selectMod('dashboard')" id="m-dashboard">
+      <div class="mod-icon" style="background:#FFF7E0;">📊</div>
+      <div class="mod-name">Dashboard & Reporting</div>
+      <div class="mod-desc">KPI temps réel, jauge CA, historique clôtures, journal déverrouillages.</div>
+      <div class="mod-tables">Vue agrégée multi-tables</div>
+    </div>
+  </div>
+  <div id="mod-detail" class="detail-box" style="display:none;margin-top:1rem;"></div>
+</div>
+</div>
+
+<script>
+// ---- TABS ----
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ---- STATE MACHINE ----
+const stateDetails = {
+  open: {
+    title: 'État OUVERTE — règles détaillées',
+    items: [
+      'Toutes les opérations de saisie sont autorisées (stock, caisse, sessions vendeurs).',
+      'Le dashboard affiche la checklist de clôture en temps réel (conditions vertes/rouges).',
+      'Une dotation peut être modifiée tant que la session vendeur concernée n\'est pas RECONCILIEE.',
+      'Transition vers EN_CLÔTURE uniquement si 100% des prérequis sont satisfaits.',
+      'Une seule période OUVERTE par site à la fois (contrainte unique en base).'
+    ]
+  },
+  closing: {
+    title: 'État EN_CLÔTURE — règles détaillées',
+    items: [
+      'Toutes les saisies standards sont suspendues (interfaces en lecture seule).',
+      'Seule la correction d\'un écart bloquant détecté pendant le wizard est possible.',
+      'L\'admin peut annuler → retour à OUVERTE sans perte de données.',
+      'Le wizard 5 étapes cristallise successivement : stocks (step 01), vendeurs (step 02), caisse (step 03).',
+      'En cas de panne pendant la transaction atomique → ROLLBACK complet, retour EN_CLÔTURE.'
+    ]
+  },
+  closed: {
+    title: 'État CLÔTURÉE — règles détaillées',
+    items: [
+      'Aucune écriture possible depuis l\'interface standard.',
+      'Le rapport PDF horodaté est archivé en lecture seule (hash SHA-256, stockage S3).',
+      'La période J+1 a déjà été créée automatiquement avec les reports de stock et caisse.',
+      'Le Super Admin peut déverrouiller avec justification obligatoire (tracé dans admin_unlock_log).',
+      'Chaque déverrouillage incrémente le compteur unlock_count sur la période.'
+    ]
+  },
+  locked: {
+    title: 'État VERROUILLÉE — règles détaillées',
+    items: [
+      'État final irréversible, atteint après délai de rétention configurable.',
+      'Accessible uniquement en lecture pour audit et exports.',
+      'Aucune transition possible, même pour le Super Admin.',
+      'Les données restent requêtables pour reporting historique et comparaisons inter-sites.'
+    ]
+  }
+};
+
+function selectState(id) {
+  ['open','closing','closed','locked'].forEach(s => {
+    const el = document.getElementById('s-'+s);
+    el.style.borderWidth = '0.5px';
+    el.style.background = '';
+  });
+  const el = document.getElementById('s-'+id);
+  el.style.borderWidth = '1.5px';
+  el.style.background = 'var(--color-background-secondary)';
+  const d = stateDetails[id];
+  const detail = document.getElementById('state-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = '<h4>' + d.title + '</h4><ul>' + d.items.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+}
+
+// ---- CHECKLIST ----
+const checks = [
+  { id:'c1', module:'Stocks', label:'Dotations matinales complètes', status:'ok' },
+  { id:'c2', module:'Stocks', label:'Retours invendus enregistrés', status:'ok' },
+  { id:'c3', module:'Stocks', label:'Bilan stock équilibré (dotation = ventes + retours + démarque)', status:'block' },
+  { id:'c4', module:'Vendeurs', label:'Toutes sessions au statut RECONCILIEE', status:'block' },
+  { id:'c5', module:'Vendeurs', label:'Écarts de caisse vendeurs confirmés', status:'ok' },
+  { id:'c6', module:'Caisse', label:'Solde physique saisi par le gestionnaire', status:'ok' },
+  { id:'c7', module:'Caisse', label:'Écart global de caisse justifié', status:'ok' },
+  { id:'c8', module:'Caisse', label:'Opérations Hors-Produit enregistrées', status:'ok' },
+  { id:'c9', module:'Caisse', label:'Provisions gelées confirmées ou libérées', status:'warn' },
+];
+
+function renderChecklist() {
+  const grid = document.getElementById('check-grid');
+  const ok = checks.filter(c => c.status === 'ok').length;
+  const blocked = checks.filter(c => c.status === 'block').length;
+  document.getElementById('check-counter').textContent = ok + ' / ' + checks.length + ' conditions satisfaites — ' + blocked + ' bloquante(s)';
+  grid.innerHTML = checks.map(c => {
+    const ic = c.status === 'ok' ? '✓' : c.status === 'block' ? '✗' : '!';
+    const cls = c.status === 'ok' ? 'check-ok' : c.status === 'block' ? 'check-block' : 'check-warn';
+    return '<div class="check-item" onclick="toggleCheck(\'' + c.id + '\')">' +
+      '<div class="check-icon ' + cls + '">' + ic + '</div>' +
+      '<div><div class="check-text">' + c.label + '</div><div class="check-module">' + c.module + '</div></div></div>';
+  }).join('');
+  const cta = document.getElementById('check-cta');
+  if (blocked === 0) {
+    cta.className = 'cta-bar ready';
+    cta.innerHTML = '<span class="cta-label ready-text">✓ Tous les prérequis sont satisfaits</span><button class="cta-btn btn-ready" onclick="sendPrompt(\'Décris le processus de la clôture en 5 étapes\')">Initier la clôture ↗</button>';
+  } else {
+    cta.className = 'cta-bar blocked';
+    cta.innerHTML = '<span class="cta-label blocked-text">✗ ' + blocked + ' condition(s) bloquante(s) — clôture impossible</span><button class="cta-btn btn-blocked" disabled>Initier la clôture</button>';
+  }
+}
+
+function toggleCheck(id) {
+  const c = checks.find(x => x.id === id);
+  c.status = c.status === 'ok' ? 'block' : 'ok';
+  renderChecklist();
+}
+
+renderChecklist();
+
+// ---- MODULES ----
+const modDetails = {
+  periods: {
+    color:'selected-blue',
+    title:'Périodes comptables — table pivot',
+    content:'<p>Chaque enregistrement de stock, caisse ou session vendeur porte un <code>period_id</code> étranger vers cette table. C\'est le mécanisme qui rend possible le verrouillage temporel.</p><p style="margin-top:8px;"><strong>Règles critiques :</strong></p><ul><li>Une seule période OUVERTE par site à tout moment.</li><li>Le champ <code>status</code> est une enum stricte — aucune valeur hors machine à états.</li><li>Le champ <code>unlock_count</code> est audité et visible Super Admin.</li></ul><div style="margin-top:8px;"><strong>Intégrations :</strong> toutes les tables opérationnelles y font référence.</div>'
+  },
+  stocks: {
+    color:'selected-green',
+    title:'Stocks circulants — cycle complet',
+    content:'<p>Formule de clôture stock : <code>closing_stock = opening_stock + supply_qty + total_returned − total_issued</code></p><p style="margin-top:8px;"><strong>Prérequis bloquants :</strong></p><ul><li>total_issued doit égaler (total_sold + total_returned + shrinkage) pour chaque produit.</li><li>Tout écart non justifié bloque la clôture.</li></ul><p style="margin-top:8px;"><strong>Report J+1 :</strong> <code>opening_stock(J+1) = closing_stock(J)</code>, atomique avec la transaction de clôture.</p>'
+  },
+  vendors: {
+    color:'selected-gold',
+    title:'Vendeurs & Paie — logique de rémunération',
+    content:'<p>Formule : <code>Rémunération Nette = MAX(0, Σ(ventes × taux) − Σ(écarts défavorables))</code></p><p style="margin-top:8px;"><strong>Statuts de session :</strong></p><ul><li><strong>EN_ATTENTE</strong> — dotation saisie, retour manquant. 🔴 Bloquant.</li><li><strong>PARTIELLE</strong> — retour ok, encaissement non confirmé. 🔴 Bloquant.</li><li><strong>RECONCILIEE</strong> — tout validé. ✅ Prérequis satisfait.</li><li><strong>SANS_ACTIVITE</strong> — vendeur non doté ce jour. ⚪ Neutre.</li></ul>'
+  },
+  cash: {
+    color:'selected-red',
+    title:'Caisse paramétrée — arrêté physique',
+    content:'<p>Deux types de flux : <strong>Produit</strong> (alimenté automatiquement par réconciliation vendeurs) et <strong>Hors-Produit</strong> (frais, provisions, libellé obligatoire).</p><p style="margin-top:8px;"><strong>Arrêté physique (étape 03) :</strong> le gestionnaire saisit le solde réellement compté. L\'écart avec le solde théorique génère une opération de régularisation (<code>is_regularization=true</code>). C\'est ce solde physique — pas le théorique — qui est reporté en ouverture J+1.</p>'
+  },
+  closure: {
+    color:'selected-blue',
+    title:'Moteur de clôture — garanties techniques',
+    content:'<p>La transaction atomique (BEGIN…COMMIT/ROLLBACK via Prisma Interactive Transactions) garantit qu\'aucun état intermédiaire incohérent n\'est possible. Si la panne survient entre l\'étape 03 et 05, tout est annulé et la période reste EN_CLÔTURE.</p><p style="margin-top:8px;"><strong>Journal d\'audit :</strong> chaque déverrouillage Super Admin est tracé dans <code>admin_unlock_log</code> avec horodatage, identité et justification obligatoire.</p><p style="margin-top:8px;"><strong>PDF de clôture :</strong> généré par Puppeteer côté serveur, hash SHA-256, stockage S3 immuable.</p>'
+  },
+  dashboard: {
+    color:'selected-gold',
+    title:'Dashboard & Reporting — vues agrégées',
+    content:'<p>Le widget checklist affiche en permanence le ratio <strong>X/9 conditions satisfaites</strong> avec lien direct vers chaque formulaire de correction.</p><p style="margin-top:8px;"><strong>Super Admin :</strong> carte réseau des clôtures (clôturé / en retard / en cours), jauge CA annuel 180 000 USD, accès à l\'historique des déverrouillages filtrable.</p><p style="margin-top:8px;"><strong>Historique :</strong> toutes les périodes paginées avec statut coloré, signataire, horodatage et lien PDF archivé.</p>'
+  }
+};
+
+function selectMod(id) {
+  Object.keys(modDetails).forEach(k => {
+    const el = document.getElementById('m-'+k);
+    el.style.borderWidth = '0.5px';
+    el.style.background = '';
+  });
+  const el = document.getElementById('m-'+id);
+  el.style.borderWidth = '1.5px';
+  el.style.background = 'var(--color-background-secondary)';
+  const d = modDetails[id];
+  const detail = document.getElementById('mod-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = '<h4>' + d.title + '</h4>' + d.content;
+}
+</script>

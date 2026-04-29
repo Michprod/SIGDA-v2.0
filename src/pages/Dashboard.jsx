@@ -1,216 +1,254 @@
 import React from 'react';
 import { useAppState } from '../context/StateContext';
-import { fmtUSD, fmtQty, pct, getStatutConfig } from '../utils/formatters';
-import { Icon, StatutBadge, VendeurBadge, CircularGauge, ChecklistIcon } from '../components/Common';
-import { useNavigate } from 'react-router-dom';
+import { fmtUSD } from '../utils/formatters';
 
-const Dashboard = ({ onOpenWizard }) => {
-  const { 
-    state, 
-    getCAJour, 
-    getVendeursReconcilies, 
-    getTotalVendeurs, 
-    getStockTotalDispo, 
-    getChecklistBloquants, 
-    isClotureBloquee 
+/* ─── Checklist config (statut vient du state, pas hardcodé ici) ─── */
+const CHECKLIST_DEF = [
+  { id: 'C01', label: 'Dotations matinales complètes',   module: 'Stocks'   },
+  { id: 'C02', label: 'Retours invendus enregistrés',    module: 'Stocks'   },
+  { id: 'C03', label: 'Bilan stock équilibré',           module: 'Stocks'   },
+  { id: 'C04', label: 'Toutes sessions RECONCILIEE',     module: 'Vendeurs' },
+  { id: 'C05', label: 'Écarts vendeurs confirmés',       module: 'Vendeurs' },
+  { id: 'C06', label: 'Solde physique caisse saisi',     module: 'Caisse'   },
+  { id: 'C07', label: 'Écart global de caisse justifié', module: 'Caisse'   },
+];
+
+/* ─── Explanation du solde caisse ─── */
+const SoldeExplain = ({ solde, soldeInitial, entrees, sorties }) => (
+  <div style={{ fontSize: 11, color: '#6B7280', lineHeight: 1.6, marginTop: 4 }}>
+    <strong style={{ color: '#1F2937' }}>Solde initial : </strong>{fmtUSD(soldeInitial)}<br />
+    <strong style={{ color: '#2E7D52' }}>+ Entrées (réconciliations) : </strong>{fmtUSD(entrees)}<br />
+    <strong style={{ color: '#C0392B' }}>− Sorties (frais) : </strong>{fmtUSD(Math.abs(sorties))}<br />
+    <strong style={{ color: '#1A3A6B' }}>= Solde théorique : </strong>{fmtUSD(solde)}
+  </div>
+);
+
+const Dashboard = () => {
+  const {
+    state, dispatch,
+    getCAJour, getVendeursReconcilies, getTotalVendeurs,
+    getStockTotalDispo, getSoldeActuelCaisse,
+    getTotalEntreesCaisse, getTotalSortiesCaisse,
+    isClotureBloquee, getChecklistBloquants,
   } = useAppState();
-  
-  const navigate = useNavigate();
 
-  const CA = getCAJour();
-  const caPercent = pct(CA, state.periode.objectifCA);
-  const reconcilies = getVendeursReconcilies();
-  const totalV = getTotalVendeurs();
-  const stockTotal = getStockTotalDispo();
-  const bloquants = getChecklistBloquants();
-  const clotureBloqueeValue = isClotureBloquee();
-  const isCloture = ['CLOTUREE', 'VERROUILLEE'].includes(state.periode.statut);
+  const { periode, vendeurs = [], checklist = [], produits = [], isLoading, error } = state;
+
+  /* ── État de chargement ── */
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12, color: '#6B7280' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 36, opacity: 0.3 }}>sync</span>
+        <span style={{ fontSize: 14 }}>Chargement des données...</span>
+      </div>
+    );
+  }
+
+  /* ── Aucune période active ── */
+  if (!periode) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 360, gap: 16, textAlign: 'center' }}>
+        <div style={{ width: 72, height: 72, borderRadius: 16, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 36, color: '#9CA3AF' }}>event_busy</span>
+        </div>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1F2937', margin: 0 }}>Aucune période active</h2>
+          <p style={{ fontSize: 13, color: '#6B7280', margin: '6px 0 0' }}>
+            Aucune journée d'exploitation n'est ouverte sur ce site.<br />
+            Créez une nouvelle période via le menu <strong>Configuration → Période</strong>.
+          </p>
+        </div>
+        <a href="/configuration" className="btn btn-primary">
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add_circle</span>
+          Ouvrir une nouvelle période
+        </a>
+      </div>
+    );
+  }
+
+  const caJour             = getCAJour();
+  const vendeursReconcilies = getVendeursReconcilies();
+  const totalVendeurs       = getTotalVendeurs();
+  const stockDispo          = getStockTotalDispo();
+  const solde               = getSoldeActuelCaisse();
+  const entrees             = getTotalEntreesCaisse();
+  const sorties             = getTotalSortiesCaisse();
+  const soldeInitial        = state.caisse?.soldeInitial || 0;
+  const bloquants           = getChecklistBloquants();
+  const bloquee             = isClotureBloquee();
+
+  const vendeursEnAttente = vendeurs.filter(v => v.statut === 'EN_ATTENTE').length;
+
+  /* Checklist depuis le state (plus de hardcode) */
+  const clStates = CHECKLIST_DEF.map(c => {
+    const saved = checklist.find(x => x.id === c.id);
+    return { ...c, statut: saved?.statut || 'EN_ATTENTE' };
+  });
+  const nbOk = clStates.filter(c => c.statut === 'OK').length;
+  const pct  = Math.round((nbOk / clStates.length) * 100);
+
+  const handleInitierCloture = () => {
+    if (!bloquee) dispatch({ type: 'SET_STATUT_PERIODE', payload: 'EN_CLOTURE' });
+  };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-8">
-        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#002451]">Tableau de Bord Journalier</h2>
-        <p className="text-slate-500 font-medium mt-1">Aperçu de la gestion du site — {state.periode.site}</p>
-      </div>
+    <div>
+      {/* Alert strip */}
+      {vendeursEnAttente > 0 && (
+        <div className="alert-strip alert-warn">
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>warning</span>
+          <strong>{vendeursEnAttente} session{vendeursEnAttente > 1 ? 's' : ''} vendeur{vendeursEnAttente > 1 ? 's' : ''}</strong> en attente de réconciliation — clôture bloquée.
+        </div>
+      )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* CA Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-[#C9A227] flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Chiffre d'Affaires</p>
-            <h3 className="text-2xl font-black text-[#002451]">{fmtUSD(CA)} <span className="text-sm font-medium text-slate-400">USD</span></h3>
-            <p className="text-xs font-semibold text-[#755b00] mt-2 flex items-center gap-1">
-              <Icon name="trending_up" className="text-sm" />
-              {caPercent}% de l'objectif ({fmtUSD(state.periode.objectifCA)})
-            </p>
-          </div>
-          <CircularGauge pct={caPercent} />
+      {/* KPIs */}
+      <div className="kpi-grid">
+        {/* CA Jour */}
+        <div className="kpi-card">
+          <div className="kpi-label">CA du jour</div>
+          <div className="kpi-value">{fmtUSD(caJour)}</div>
+          <div className="kpi-sub">Vendeurs réconciliés seulement</div>
         </div>
 
-        {/* Vendeurs Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Vendeurs Réconciliés</p>
-            <h3 className="text-2xl font-black text-[#002451]">{reconcilies} <span className="text-sm font-medium text-slate-400">/ {totalV}</span></h3>
-            <span className="inline-flex items-center px-2 py-0.5 mt-2 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">
-              {reconcilies < totalV ? `${totalV - reconcilies} EN ATTENTE` : '✓ TOUS RÉCONCILIÉS'}
+        {/* Vendeurs */}
+        <div className="kpi-card">
+          <div className="kpi-label">Vendeurs réconciliés</div>
+          <div className="kpi-value">{vendeursReconcilies} <span style={{ fontSize: 14, color: '#6B7280', fontWeight: 400 }}>/ {totalVendeurs}</span></div>
+          <div className={`kpi-sub ${vendeursEnAttente > 0 ? 'warn' : 'up'}`}>
+            {vendeursEnAttente > 0 ? `${vendeursEnAttente} en attente` : 'Tous réconciliés ✓'}
+          </div>
+        </div>
+
+        {/* Stock */}
+        <div className="kpi-card">
+          <div className="kpi-label">Stock disponible</div>
+          <div className="kpi-value">{stockDispo.toLocaleString('fr-FR')} <span style={{ fontSize: 14, color: '#6B7280', fontWeight: 400 }}>u.</span></div>
+          <div className="kpi-sub">
+            {produits.length > 0 ? `${produits.length} produit(s) au dépôt` : 'Aucun produit configuré'}
+          </div>
+        </div>
+
+        {/* Solde caisse */}
+        <div className="kpi-card" style={{ position: 'relative', overflow: 'visible' }}>
+          <div className="kpi-label">
+            Solde caisse théorique
+            <span title="Comment est calculé ce solde ?" style={{ marginLeft: 6, cursor: 'help', fontSize: 14, color: '#9CA3AF', verticalAlign: 'middle' }}>
+              ⓘ
             </span>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
-            <Icon name="how_to_reg" className="text-2xl" fill={true} />
-          </div>
-        </div>
-
-        {/* Stock Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-secondary flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Stock Total Dispo</p>
-            <h3 className="text-2xl font-black text-[#002451]">{fmtQty(stockTotal)} <span className="text-sm font-medium text-slate-400">unités</span></h3>
-            <p className="text-xs font-semibold text-slate-500 mt-2">Inventaire centralisé</p>
-          </div>
-          <div className="w-12 h-12 bg-blue-50 text-secondary rounded-full flex items-center justify-center">
-            <Icon name="inventory_2" className="text-2xl" fill={true} />
-          </div>
+          <div className="kpi-value">{fmtUSD(solde)}</div>
+          <div className="kpi-sub">= Solde initial + entrées − sorties</div>
+          {/* Détail inline */}
+          <SoldeExplain solde={solde} soldeInitial={soldeInitial} entrees={entrees} sorties={sorties} />
         </div>
       </div>
 
-      {/* Two column layout */}
-      <div className="grid grid-cols-12 gap-8 items-start">
-        {/* Vendeurs Table */}
-        <div className="col-span-12 lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
-            <h4 className="font-bold text-[#002451] flex items-center gap-2">
-              <span className="w-1.5 h-5 bg-[#C9A227] rounded-full"></span>
-              Activité des Vendeurs
-            </h4>
-            <button 
-              onClick={() => navigate('/vendeurs')}
-              className="p-2 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 text-slate-500 hover:text-[#002451]"
-            >
-              <Icon name="open_in_new" className="text-sm" />
-            </button>
+      {/* Two columns */}
+      <div className="two-col">
+        {/* Checklist clôture */}
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <div className="card-title">Prêt pour la clôture ?</div>
+              <div className="card-sub">{nbOk} / {clStates.length} conditions satisfaites</div>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                  <th className="px-6 py-3">Nom Vendeur</th>
-                  <th className="px-6 py-3">Stock Départ</th>
-                  <th className="px-6 py-3">Retours</th>
-                  <th className="px-6 py-3">Caisse Théo.</th>
-                  <th className="px-6 py-3">Statut</th>
-                  <th className="px-6 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {state.vendeurs.map((v) => {
-                  const isReconcilie = v.statut === 'RECONCILIEE';
-                  return (
-                    <tr key={v.id} className="hover:bg-slate-50/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <VendeurBadge initiales={v.initiales} colorClass={v.colorClass} />
-                          <span className="font-semibold text-slate-700">{v.nom}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 text-sm">{fmtQty(v.stockDepart)} unités</td>
-                      <td className="px-6 py-4 text-slate-600 text-sm">{v.retours > 0 ? `${fmtQty(v.retours)} unités` : '--'}</td>
-                      <td className="px-6 py-4 font-bold text-[#002451] text-sm">{fmtUSD(v.caisseTheorique)}</td>
-                      <td className="px-6 py-4">
-                        <div className={`flex items-center gap-1.5 font-semibold text-sm ${isReconcilie ? 'text-emerald-700' : 'text-amber-600'}`}>
-                          <Icon name={isReconcilie ? 'check_circle' : 'schedule'} className="text-base" fill={isReconcilie} />
-                          {isReconcilie ? 'Réconcilié' : 'En attente'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {!isCloture && !isReconcilie && (
-                          <button 
-                            onClick={() => navigate('/vendeurs')}
-                            className="text-xs font-bold text-[#2D6FAD] hover:underline flex items-center gap-1"
-                          >
-                            <Icon name="arrow_forward" className="text-sm" />
-                            Réconcilier
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="card-body">
+            <div className="cl-progress">
+              <div className="cl-bar" style={{ width: `${pct}%` }} />
+            </div>
+
+            {clStates.map(c => {
+              const isOk   = c.statut === 'OK';
+              const isWarn = c.statut === 'AVERTISSEMENT';
+              const icon   = isOk ? '✓' : isWarn ? '!' : '✗';
+              const cls    = isOk ? 'ic-ok' : isWarn ? 'ic-warn' : 'ic-ko';
+              return (
+                <div key={c.id} className="cl-item">
+                  <div className={`cl-icon ${cls}`}>{icon}</div>
+                  <div>
+                    <div className="cl-text">{c.label}</div>
+                    <div className="cl-module">{c.module}</div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <span style={{ fontSize: 11, color: bloquants > 0 ? '#6B7280' : '#2E7D52' }}>
+                {bloquants > 0 ? `${bloquants} bloquante(s) restante(s)` : '✓ Prêt pour la clôture'}
+              </span>
+              <button
+                onClick={handleInitierCloture}
+                className={bloquants > 0 ? 'btn btn-disabled' : 'btn btn-primary'}
+                disabled={bloquants > 0}
+              >
+                Initier la clôture {bloquants === 0 && '→'}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Right column */}
-        <div className="col-span-12 lg:col-span-4 space-y-5">
-          {/* Checklist */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h4 className="font-bold text-[#002451] mb-5 flex items-center gap-2 text-base">
-              <Icon name="fact_check" className="text-[#C9A227]" />
-              Checklist de Clôture
-            </h4>
-            <div className="space-y-3">
-              {state.checklist.map((c) => {
-                const blocking = c.statut === 'BLOQUANT';
-                const warning = c.statut === 'AVERTISSEMENT';
-                const extraClass = blocking ? 'bg-red-50 rounded-lg px-2 py-1 -mx-2' : warning ? 'bg-amber-50 rounded-lg px-2 py-1 -mx-2' : '';
-                return (
-                  <div key={c.id} className={`flex items-start gap-3 ${extraClass}`}>
-                    <ChecklistIcon statut={c.statut} />
-                    <span className={`text-sm font-medium ${blocking ? 'font-bold text-red-800' : ''}`}>{c.label}</span>
-                  </div>
-                );
-              })}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Sessions vendeurs */}
+          <div className="card">
+            <div className="card-head">
+              <div className="card-title">Sessions vendeurs</div>
+              <a href="/vendeurs" className="card-link">Voir tout →</a>
             </div>
-            <div className="mt-6 pt-5 border-t border-slate-100">
-              {clotureBloqueeValue && !isCloture ? (
-                <>
-                  <button disabled className="w-full py-4 bg-slate-200 text-slate-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed uppercase tracking-wider">
-                    <Icon name="lock" />
-                    Initier la Clôture Journalière
-                  </button>
-                  <p className="text-[10px] text-center text-slate-400 mt-2 italic">{bloquants} point(s) bloquant(s) à corriger.</p>
-                </>
-              ) : isCloture ? (
-                <div className="w-full py-4 bg-emerald-100 text-emerald-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 uppercase tracking-wider">
-                  <Icon name="verified" />
-                  Journée Clôturée
-                </div>
-              ) : (
-                <button 
-                  onClick={onOpenWizard}
-                  className="w-full py-4 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 uppercase tracking-wider shadow-lg hover:scale-[1.01] transition-all"
-                >
-                  <Icon name="lock_clock" />
-                  Initier la Clôture Journalière
-                </button>
-              )}
+            <div className="card-body" style={{ padding: 0 }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Vendeur</th>
+                    <th>CA Réel</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendeurs.length > 0 ? vendeurs.slice(0, 6).map(v => (
+                    <tr key={v.id}>
+                      <td style={{ fontWeight: 600 }}>{v.nom}</td>
+                      <td>{v.caisseSaisie > 0 ? fmtUSD(v.caisseSaisie) : '—'}</td>
+                      <td>
+                        <span className={`sess-badge ${v.statut === 'RECONCILIEE' ? 'sess-recon' : 'sess-wait'}`}>
+                          {v.statut === 'RECONCILIEE' ? 'Réconcilié' : 'En attente'}
+                        </span>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3} style={{ textAlign: 'center', color: '#9CA3AF', padding: '20px 16px', fontSize: 13 }}>
+                        Aucune session vendeur pour cette période.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Alert card */}
-          <div className="rounded-2xl p-6 text-white relative overflow-hidden bg-gradient-to-br from-[#C9A227] to-[#a07d18]">
-            <div className="absolute -right-4 -top-4 opacity-10">
-              <Icon name="stars" className="text-[6rem]" fill={true} />
+          {/* Récapitulatif caisse */}
+          <div className="card">
+            <div className="card-head">
+              <div className="card-title">Récapitulatif Caisse</div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest mb-3 opacity-70">Alerte Prioritaire</p>
-            <h5 className="text-lg font-black mb-2 leading-tight">Vérification de Stock Requise</h5>
-            <p className="text-xs opacity-90 mb-4">L'entrepôt signale un décalage sur le Jus d'Ananas 1L.</p>
-            <button 
-              onClick={() => navigate('/stocks')}
-              className="px-4 py-2 bg-white/20 text-white border border-white/30 rounded-lg text-xs font-bold hover:bg-white/30 transition-all"
-            >
-              Vérifier maintenant
-            </button>
+            <div className="card-body">
+              {[
+                { label: 'Solde d\'ouverture (coffre)', val: fmtUSD(soldeInitial), color: '#1F2937' },
+                { label: '+ Encaissements vendeurs', val: fmtUSD(entrees > 0 ? entrees : 0), color: '#2E7D52' },
+                { label: '− Frais et sorties', val: fmtUSD(Math.abs(sorties)), color: '#C0392B' },
+                { label: '= Solde théorique actuel', val: fmtUSD(solde), color: '#1A3A6B', bold: true },
+              ].map((r, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: i < 3 ? '1px dashed #F3F4F6' : 'none' }}>
+                  <span style={{ fontSize: 12, color: '#6B7280' }}>{r.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: r.bold ? 700 : 600, color: r.color }}>{r.val}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Floating status bar */}
-      <div className="hidden md:flex fixed bottom-6 left-72 z-30 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg border border-slate-200 items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        Sync Cloud · OK · Il y a 2 min
       </div>
     </div>
   );

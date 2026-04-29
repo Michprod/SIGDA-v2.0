@@ -1,262 +1,225 @@
 import React, { useState } from 'react';
 import { useAppState } from '../context/StateContext';
-import { fmtUSD, fmtQty, getStatutConfig } from '../utils/formatters';
-import { Icon, StatutBadge, VendeurBadge } from '../components/Common';
-
-const Modal = ({ title, icon, children, onClose, footer }) => (
-  <div className="fixed inset-0 z-[8000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200">
-      <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-fixed-dim flex items-center justify-center">
-            <Icon name={icon} className="text-primary" />
-          </div>
-          <h3 className="font-bold text-primary text-lg">{title}</h3>
-        </div>
-        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-          <Icon name="close" className="text-slate-400" />
-        </button>
-      </div>
-      <div className="px-6 py-5">{children}</div>
-      {footer && (
-        <div className="px-6 py-4 bg-slate-50 rounded-b-2xl border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
-          {footer}
-        </div>
-      )}
-    </div>
-  </div>
-);
+import { fmtUSD } from '../utils/formatters';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { apiService } from '../services/api';
 
 const Vendeurs = () => {
   const { state, dispatch } = useAppState();
-  const [selectedVendeur, setSelectedVendeur] = useState(null);
-  const [reconMontant, setReconMontant] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [viewDetails, setViewDetails] = useState(null);
+  const [montant, setMontant] = useState(0);
+  const [saving, setSaving] = useState(false);
 
-  const isCloture = ['CLOTUREE', 'VERROUILLEE', 'EN_CLOTURE'].includes(state.periode.statut);
+  const vendeurs = state.vendeurs || [];
+  const isCloture = ['CLOTUREE', 'VERROUILLEE', 'EN_CLOTURE'].includes(state.periode?.statut);
 
-  const calcRemuneration = (v) => {
-    const commission = v.caisseSaisie * v.commission;
-    const ecartAbs = Math.abs(v.ecart || 0);
-    return commission - ecartAbs;
-  };
+  const totalCA        = vendeurs.filter(v => v.statut === 'RECONCILIEE').reduce((s, v) => s + v.caisseSaisie, 0);
+  const reconcilies    = vendeurs.filter(v => v.statut === 'RECONCILIEE').length;
+  const enAttente      = vendeurs.filter(v => v.statut === 'EN_ATTENTE').length;
+  const totalRemunet   = vendeurs.filter(v => v.statut === 'RECONCILIEE')
+    .reduce((s, v) => s + Math.max(0, v.caisseSaisie * (v.commission || 0.05) - Math.abs(v.ecart || 0)), 0);
 
-  const handleOpenReconciliation = (v) => {
-    setSelectedVendeur(v);
-    setReconMontant(v.caisseTheorique);
-  };
-
-  const handleConfirmReconciliation = () => {
-    if (isNaN(reconMontant) || reconMontant < 0) {
-      alert('Entrez un montant valide.');
-      return;
+  const openModal = (v) => { setSelected(v); setMontant(v.caisseTheorique); };
+  const confirm = async () => {
+    if (isNaN(montant) || montant < 0) return;
+    setSaving(true);
+    const loadId = toast.loading(`Réconciliation en cours...`);
+    try {
+      await apiService.reconcilierSession(selected.sessionId, montant);
+      dispatch({ type: 'RECONCILIER_VENDEUR', payload: { vendeurId: selected.id, caisseSaisie: montant } });
+      setSelected(null);
+      toast.success(`Session de ${selected.nom} réconciliée avec succès.`, { id: loadId });
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Erreur lors de la réconciliation.', { id: loadId });
+    } finally {
+      setSaving(false);
     }
-    dispatch({
-      type: 'RECONCILIER_VENDEUR',
-      payload: { vendeurId: selectedVendeur.id, caisseSaisie: reconMontant }
-    });
-    setSelectedVendeur(null);
   };
-
-  const totalCA = state.vendeurs.filter(v => v.statut === 'RECONCILIEE').reduce((s, v) => s + v.caisseSaisie, 0);
-  const totalRemunet = state.vendeurs.filter(v => v.statut === 'RECONCILIEE').reduce((s, v) => s + calcRemuneration(v), 0);
-  const totalEcart = state.vendeurs.filter(v => v.statut === 'RECONCILIEE').reduce((s, v) => s + (v.ecart || 0), 0);
-  const reconciliesCount = state.vendeurs.filter(v => v.statut === 'RECONCILIEE').length;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-8">
-        <h2 className="text-2xl md:text-3xl font-black tracking-tight text-[#002451]">Vendeurs & Réconciliation</h2>
-        <p className="text-slate-500 font-medium">Rapprochement des encaissements et calcul des rémunérations</p>
-      </div>
-
-      {/* KPI Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-[#C9A227]">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">CA Total Réconcilié</p>
-          <p className="text-2xl font-black text-[#002451]">{fmtUSD(totalCA)}</p>
-          <p className="text-xs text-slate-400 mt-1">Encaissements validés</p>
+    <div>
+      {/* KPIs */}
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+        <div className="kpi-card">
+          <div className="kpi-label">CA réconcilié</div>
+          <div className="kpi-value">{fmtUSD(totalCA)}</div>
+          <div className="kpi-sub">Encaissements validés</div>
         </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Réconciliés</p>
-          <p className="text-2xl font-black text-[#002451]">{reconciliesCount} <span className="text-sm text-slate-400">/ {state.vendeurs.length}</span></p>
-          <p className="text-xs text-slate-400 mt-1">Vendeurs traités</p>
+        <div className="kpi-card">
+          <div className="kpi-label">Réconciliés</div>
+          <div className="kpi-value">{reconcilies} <span style={{ fontSize: 14, color: '#6B7280', fontWeight: 400 }}>/ {vendeurs.length}</span></div>
+          <div className={`kpi-sub ${enAttente > 0 ? 'warn' : 'up'}`}>{enAttente > 0 ? `${enAttente} en attente` : 'Tous traités ✓'}</div>
         </div>
-        <div className={`bg-white p-5 rounded-2xl shadow-sm border-b-4 ${totalEcart < 0 ? 'border-red-400' : 'border-emerald-400'}`}>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Écart Total</p>
-          <p className={`text-2xl font-black ${totalEcart < 0 ? 'text-red-600' : totalEcart > 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
-            {totalEcart >= 0 ? '+' : ''}{fmtUSD(totalEcart)}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">Différence cumulée</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-[#1A3A6B]">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Rémunérations</p>
-          <p className="text-2xl font-black text-[#002451]">{fmtUSD(totalRemunet)}</p>
-          <p className="text-xs text-slate-400 mt-1">Net à distribuer</p>
+        <div className="kpi-card">
+          <div className="kpi-label">Rémunérations nettes</div>
+          <div className="kpi-value">{fmtUSD(totalRemunet)}</div>
+          <div className="kpi-sub">Net à distribuer</div>
         </div>
       </div>
 
-      {/* Table principale */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
-          <h4 className="font-bold text-[#002451] flex items-center gap-2">
-            <span className="w-1.5 h-5 bg-[#2D6FAD] rounded-full"></span>
-            Sessions de Vente — {state.periode.date}
-          </h4>
-          <button className="flex items-center gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-xs font-bold text-slate-600 transition-colors border border-slate-200">
-            <Icon name="download" className="text-sm" /> Exporter
-          </button>
+      {/* Table sessions */}
+      <div className="card" style={{ overflowX: 'auto' }}>
+        <div className="card-head">
+          <div className="card-title">Sessions vendeurs — {state.periode?.date || '—'}</div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <th className="px-6 py-4">Vendeur</th>
-                <th className="px-6 py-4 text-center">Stock Départ</th>
-                <th className="px-6 py-4 text-center">Retours</th>
-                <th className="px-6 py-4 text-center">Encaissement Théo.</th>
-                <th className="px-6 py-4 text-center">Encaissement Réel</th>
-                <th className="px-6 py-4 text-center">Écart</th>
-                <th className="px-6 py-4 text-center">Statut</th>
-                <th className="px-6 py-4 text-center">Rémunération</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {state.vendeurs.map((v) => {
-                const isReconcilie = v.statut === 'RECONCILIEE';
-                const remunet = isReconcilie ? calcRemuneration(v) : null;
-                const ecartClass = v.ecart > 0 ? 'text-emerald-600' : v.ecart < 0 ? 'text-red-600' : 'text-slate-500';
-
-                return (
-                  <tr key={v.id} className={`${isReconcilie ? '' : 'bg-amber-50/20'} hover:bg-slate-50/50 transition-colors`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <VendeurBadge initiales={v.initiales} colorClass={v.colorClass} />
-                        <div>
-                          <p className="font-bold text-slate-800 text-sm">{v.nom}</p>
-                          <p className="text-[10px] text-slate-400">{v.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center font-semibold text-sm">{fmtQty(v.stockDepart)}</td>
-                    <td className="px-6 py-4 text-center font-semibold text-sm">{fmtQty(v.retours)}</td>
-                    <td className="px-6 py-4 text-center font-bold text-[#002451] text-sm">{fmtUSD(v.caisseTheorique)}</td>
-                    <td className="px-6 py-4 text-center font-bold text-sm">
-                      {isReconcilie ? (
-                        <span className="text-[#2E7D52]">{fmtUSD(v.caisseSaisie)}</span>
-                      ) : (
-                        <span className="text-slate-300">--</span>
-                      )}
-                    </td>
-                    <td className={`px-6 py-4 text-center font-bold text-sm ${ecartClass}`}>
-                      {isReconcilie ? `${v.ecart >= 0 ? '+' : ''}${fmtUSD(v.ecart)}` : '--'}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <StatutBadge statut={v.statut} />
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {isReconcilie ? (
-                        <span className="font-black text-[#002451] text-sm">{fmtUSD(remunet)}</span>
-                      ) : !isCloture ? (
-                        <button
-                          onClick={() => handleOpenReconciliation(v)}
-                          className="px-3 py-1.5 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm hover:scale-[1.05] transition-all flex items-center gap-1 mx-auto"
-                        >
-                          <Icon name="payments" className="text-sm" /> Réconcilier
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Vendeur</th>
+              <th style={{ textAlign: 'center' }}>Encais. Théorique</th>
+              <th style={{ textAlign: 'center' }}>Encais. Réel</th>
+              <th style={{ textAlign: 'center' }}>Écart</th>
+              <th style={{ textAlign: 'center' }}>Statut</th>
+              <th style={{ textAlign: 'center' }}>Rémunération</th>
+              <th style={{ textAlign: 'center' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vendeurs.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', color: '#9CA3AF', padding: 24 }}>Aucune session</td></tr>
+            ) : vendeurs.map(v => {
+              const isRecon = v.statut === 'RECONCILIEE';
+              const ecart = v.ecart || 0;
+              const remunet = isRecon ? Math.max(0, v.caisseSaisie * (v.commission || 0.05) - Math.abs(ecart)) : null;
+              return (
+                <tr key={v.id}>
+                  <td>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{v.nom}</div>
+                  </td>
+                  <td style={{ textAlign: 'center', color: '#2D6FAD', fontWeight: 600 }}>{fmtUSD(v.caisseTheorique)}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 600, color: isRecon ? '#2E7D52' : '#9CA3AF' }}>
+                    {isRecon ? fmtUSD(v.caisseSaisie) : '—'}
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 700, color: ecart < 0 ? '#C0392B' : ecart > 0 ? '#2E7D52' : '#6B7280' }}>
+                    {isRecon ? `${ecart >= 0 ? '+' : ''}${fmtUSD(ecart)}` : '—'}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className={`sess-badge ${isRecon ? 'sess-recon' : v.statut === 'PARTIELLE' ? 'sess-partial' : 'sess-wait'}`}>
+                      {isRecon ? 'Réconcilié' : v.statut === 'PARTIELLE' ? 'Partielle' : 'En attente'}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 700, color: '#1F2937' }}>
+                    {isRecon ? fmtUSD(remunet) : '—'}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                      <Link to={`/vendeurs/${v.id}/historique`} className="icon-btn" title="Historique">
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>history</span>
+                      </Link>
+                      <button onClick={() => setViewDetails(v)} className="icon-btn" title="Détails journée">
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>inventory</span>
+                      </button>
+                      {!isRecon && !isCloture && (
+                        <button onClick={() => openModal(v)} className="btn btn-primary" style={{ padding: '5px 12px', fontSize: 11 }}>
+                          Réconcilier
                         </button>
-                      ) : (
-                        <span className="text-slate-300 text-xs">En attente</span>
                       )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* Reconciliation Modal */}
-      {selectedVendeur && (
-        <Modal
-          title={`Réconciliation — ${selectedVendeur.nom}`}
-          icon="payments"
-          onClose={() => setSelectedVendeur(null)}
-          footer={
-            <>
-              <button 
-                onClick={() => setSelectedVendeur(null)} 
-                className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-              >
-                Annuler
-              </button>
-              <button 
-                onClick={handleConfirmReconciliation} 
-                className="w-full sm:w-auto justify-center px-6 py-2.5 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white text-sm font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2"
-              >
-                <Icon name="task_alt" className="text-sm" fill={true} /> Valider & Clôturer Session
-              </button>
-            </>
-          }
-        >
-          <div className="space-y-5">
-            <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-              <VendeurBadge initiales={selectedVendeur.initiales} colorClass={selectedVendeur.colorClass} />
+      {/* Formule de rémunération */}
+      <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: '#EEF3FB', borderLeft: '3px solid #1A3A6B', fontSize: 12, color: '#374151' }}>
+        <strong>Formule :</strong> Rémunération nette = MAX(0, Σ(ventes × taux) − Σ(écarts défavorables))
+        <span style={{ color: '#6B7280', marginLeft: 8 }}>— Ne peut jamais être négative.</span>
+      </div>
+
+      {/* Modal Réconciliation */}
+      {selected && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.4)' }}>
+          <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p className="font-bold text-[#002451]">{selectedVendeur.nom}</p>
-                <p className="text-xs text-slate-500">
-                  Stock départ: {fmtQty(selectedVendeur.stockDepart)} unités • Retours: {selectedVendeur.retours}
-                </p>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1F2937' }}>Réconciliation — {selected.nom}</div>
+                <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Saisir l'encaissement réel remis par le vendeur</div>
               </div>
+              <button onClick={() => setSelected(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 20, lineHeight: 1 }}>×</button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-blue-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Encaissement Théorique</p>
-                <p className="text-2xl font-black text-[#002451]">{fmtUSD(selectedVendeur.caisseTheorique)}</p>
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div style={{ padding: '12px', borderRadius: 8, background: '#EEF3FB', border: '1px solid #BFDBFE' }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: '#2D6FAD', textTransform: 'uppercase', marginBottom: 4 }}>Encaissement théorique</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1F2937' }}>{fmtUSD(selected.caisseTheorique)}</div>
+                </div>
+                <div style={{ padding: '12px', borderRadius: 8, background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                  <label style={{ fontSize: 10, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Argent remis réel (FC)</label>
+                  <input
+                    type="number" value={montant} autoFocus
+                    onChange={e => setMontant(parseFloat(e.target.value) || 0)}
+                    style={{ width: '100%', fontSize: 20, fontWeight: 700, border: 'none', outline: 'none', background: 'transparent', color: '#1F2937', borderBottom: '2px solid #1A3A6B' }}
+                  />
+                </div>
               </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Argent Remis Réel</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={reconMontant}
-                  onChange={(e) => setReconMontant(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-white border-0 border-b-2 border-slate-300 focus:border-[#002451] focus:ring-0 font-black text-xl text-[#002451] rounded-t-lg py-2 px-1 outline-none"
-                  autoFocus
-                />
-              </div>
+              {(() => {
+                const diff = montant - selected.caisseTheorique;
+                const neg = diff < -0.01;
+                return (
+                  <div style={{ padding: '12px', borderRadius: 8, textAlign: 'center', border: `2px dashed ${neg ? '#C0392B' : '#2E7D52'}`, background: neg ? '#FEE2E2' : '#DCFCE7' }}>
+                    <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>Écart calculé</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: neg ? '#C0392B' : '#2E7D52' }}>{diff >= 0 ? '+' : ''}{fmtUSD(diff)}</div>
+                  </div>
+                );
+              })()}
             </div>
-            <div className={`p-4 rounded-xl text-center border-2 border-dashed transition-colors ${
-              reconMontant - selectedVendeur.caisseTheorique < -0.01 
-                ? 'border-red-300 bg-red-50' 
-                : 'border-emerald-300 bg-emerald-50'
-            }`}>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Écart Calculé</p>
-              <p className={`text-3xl font-black ${
-                reconMontant - selectedVendeur.caisseTheorique < -0.01 ? 'text-red-600' : 'text-emerald-600'
-              }`}>
-                {reconMontant - selectedVendeur.caisseTheorique >= 0 ? '+' : ''}{fmtUSD(reconMontant - selectedVendeur.caisseTheorique)}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                Rémunération nette: {fmtUSD(reconMontant * 0.05 - Math.abs(reconMontant - selectedVendeur.caisseTheorique))}
-              </p>
+            <div style={{ padding: '12px 20px', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setSelected(null)} disabled={saving} className="btn btn-outline">Annuler</button>
+              <button onClick={confirm} disabled={saving} className="btn btn-success">
+                {saving ? 'Validation...' : '✓ Valider la session'}
+              </button>
             </div>
           </div>
-        </Modal>
+        </div>
       )}
 
-      {/* Formule de calcul */}
-      <div className="mt-6 p-6 rounded-xl border-l-4 border-[#1A3A6B] bg-[#EEF3FB]">
-        <p className="text-xs font-black text-[#1A3A6B] uppercase tracking-wider mb-3">Formule de Rémunération</p>
-        <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-700">
-          <span className="px-3 py-2 bg-white rounded-lg shadow-sm">Encaissement Réel</span>
-          <span className="text-2xl text-slate-300">×</span>
-          <span className="px-3 py-2 bg-white rounded-lg shadow-sm">Commission (5%)</span>
-          <span className="text-2xl text-slate-300">−</span>
-          <span className="px-3 py-2 bg-white rounded-lg shadow-sm border-b-2 border-red-400">|Écart de Caisse|</span>
-          <span className="text-2xl text-[#1A3A6B]">=</span>
-          <span className="px-4 py-2 bg-[#1A3A6B] text-white rounded-lg shadow-md font-bold">Net à Payer</span>
+      {/* Modal Détails Journée */}
+      {viewDetails && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.4)' }}>
+          <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+             <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Journée de {viewDetails.nom}</div>
+                <button onClick={() => setViewDetails(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 20 }}>×</button>
+             </div>
+             <div style={{ padding: 20 }}>
+                <h4 style={{ fontSize: 12, color: '#6B7280', marginBottom: 10, textTransform: 'uppercase' }}>Stocks attribués</h4>
+                <table className="data-table">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Dotation</th>
+                            <th>Retours</th>
+                            <th>Vendu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {(state.produits || []).map(p => {
+                            const dot = state.dotations[p.id]?.[viewDetails.id] || 0;
+                            const ret = (state.retours || []).filter(r => r.vendeurId === viewDetails.id && r.produitId === p.id).reduce((s, r) => s + r.quantite, 0);
+                            if (dot === 0 && ret === 0) return null;
+                            return (
+                                <tr key={p.id}>
+                                    <td>{p.nom}</td>
+                                    <td>{dot}</td>
+                                    <td>{ret}</td>
+                                    <td style={{ fontWeight: 600, color: '#1A3A6B' }}>{dot - ret}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+             </div>
+             <div style={{ padding: '12px 20px', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={() => setViewDetails(null)} className="btn btn-outline">Fermer</button>
+             </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

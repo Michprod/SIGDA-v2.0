@@ -1,95 +1,114 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppState } from '../context/StateContext';
-import { Icon } from './Common';
 
-const NAV_ITEMS = [
-  { path: '/dashboard',  icon: 'dashboard',              label: 'Dashboard'  },
-  { path: '/stocks',     icon: 'inventory_2',             label: 'Stocks'     },
-  { path: '/vendeurs',   icon: 'groups',                  label: 'Vendeurs'   },
-  { path: '/caisse',     icon: 'account_balance_wallet',  label: 'Caisse'     },
-  { path: '/rapports',   icon: 'assessment',              label: 'Rapports'   },
-  { path: '/network',    icon: 'hub',                     label: 'Réseau'     },
-  { path: '/audit',      icon: 'rule',                    label: 'Audit'      },
+const NAV = [
+  {
+    section: 'Principal',
+    items: [
+      { path: '/dashboard', icon: 'dashboard',    label: 'Dashboard'       },
+      { path: '/periode',   icon: 'calendar_today',label: 'Période en cours' },
+    ]
+  },
+  {
+    section: 'Opérations',
+    items: [
+      { path: '/stocks',   icon: 'inventory_2',           label: 'Stocks'   },
+      { path: '/vendeurs', icon: 'groups',                 label: 'Vendeurs' },
+      { path: '/caisse',   icon: 'account_balance_wallet', label: 'Caisse'   },
+    ]
+  },
+  {
+    section: 'Administration',
+    items: [
+      { path: '/historique', icon: 'history',  label: 'Historique'      },
+      { path: '/sites',      icon: 'hub',      label: 'Tous les sites'  },
+      { path: '/audit',      icon: 'security', label: 'Journal audit'   },
+      { path: '/configuration', icon: 'settings', label: 'Configuration' },
+    ]
+  },
 ];
 
 const Sidebar = () => {
   const { state, dispatch, isClotureBloquee } = useAppState();
-  const clotureBloquee = isClotureBloquee();
-  const isCloture = state.periode.statut !== 'OUVERTE';
+  const bloquee = isClotureBloquee();
+  const isCloture = state.periode?.statut !== 'OUVERTE';
+  const vendeursBloques = (state.vendeurs || []).filter(v => v.statut === 'EN_ATTENTE').length;
 
-  const handleOpenWizard = () => {
-    dispatch({
-      type: 'SET_STATUT_PERIODE',
-      payload: 'EN_CLOTURE'
-    });
-  };
+  const site = state.periode?.site || '—';
+  const admin = state.periode?.admin || 'Admin';
+  const initials = admin.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className="h-full flex flex-col p-4 gap-2">
-      <div className="mb-6 px-2 flex items-center gap-3">
-        <div className="h-10 w-10 bg-[#1A3A6B] rounded-xl flex items-center justify-center text-white">
-          <Icon name="inventory" fill={true} />
-        </div>
-        <div>
-          <h1 className="text-xl font-black tracking-tighter text-[#002451]">SIGDA v2.0</h1>
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Distribution Mgmt</p>
-        </div>
+    <div className="sidebar">
+      {/* Logo */}
+      <div className="sidebar-logo">
+        <div className="logo-name">SIGDA</div>
+        <div className="logo-sub">Gestion Distribution Ambulante</div>
       </div>
 
-      <nav className="flex-1 space-y-1">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => 
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 text-sm font-medium select-none ${
-                isActive 
-                  ? 'bg-white text-[#002451] font-bold shadow-sm' 
-                  : 'text-slate-500 hover:text-[#002451] hover:bg-slate-200/50'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon name={item.icon} fill={isActive} />
-                <span>{item.label}</span>
-              </>
-            )}
-          </NavLink>
+      {/* Site */}
+      <div className="sidebar-site">
+        <div className="site-label">Point de vente</div>
+        <div className="site-name">{site}</div>
+      </div>
+
+      {/* Nav */}
+      <nav className="sidebar-nav">
+        {NAV.map((group, gi) => (
+          <div key={gi}>
+            <div className="nav-section-label">{group.section}</div>
+            {group.items.map(item => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+              >
+                <span className="material-symbols-outlined nav-icon">{item.icon}</span>
+                {item.label}
+                {item.path === '/vendeurs' && vendeursBloques > 0 && (
+                  <span className="nav-badge">{vendeursBloques}</span>
+                )}
+              </NavLink>
+            ))}
+            {gi < NAV.length - 1 && <div className="nav-sep" />}
+          </div>
         ))}
+
+        {/* Clôture — nav item spécial */}
+        {!isCloture && (
+          <>
+            <div className="nav-sep" />
+            <button
+              onClick={() => dispatch({ type: 'SET_STATUT_PERIODE', payload: 'EN_CLOTURE' })}
+              disabled={bloquee}
+              className="nav-item"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                opacity: bloquee ? 0.4 : 1,
+                cursor: bloquee ? 'not-allowed' : 'pointer',
+                color: bloquee ? 'rgba(255,255,255,0.35)' : 'rgba(201,162,39,0.9)',
+                borderLeft: '3px solid transparent',
+              }}
+            >
+              <span className="material-symbols-outlined nav-icon">lock_clock</span>
+              Clôture journalière
+            </button>
+          </>
+        )}
       </nav>
 
-      <div className="pt-4 border-t border-slate-200 space-y-1">
-        <NavLink
-          to="/audit"
-          className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-slate-500 hover:text-[#002451] hover:bg-slate-200/50 transition-colors text-sm"
-        >
-          <Icon name="settings" className="text-lg" />
-          <span>Paramètres</span>
-        </NavLink>
-        
-        {!isCloture && (
-          <button
-            onClick={handleOpenWizard}
-            disabled={clotureBloquee}
-            className={`w-full mt-2 py-3 px-4 bg-gradient-to-br from-[#1A3A6B] to-[#002451] text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 ${
-              clotureBloquee ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            <Icon name="lock_clock" className="text-sm" />
-            Clôture Journalière
-          </button>
-        )}
-      </div>
-
-      <div className="mt-3 p-3 bg-slate-100/80 rounded-xl flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#1A3A6B] flex items-center justify-center text-white text-sm font-bold">
-          {state.periode.admin.split(' ').map(n => n[0]).join('')}
-        </div>
-        <div className="overflow-hidden">
-          <p className="text-sm font-bold truncate text-slate-800">{state.periode.admin}</p>
-          <p className="text-[10px] text-slate-500 uppercase tracking-tight">{state.periode.adminRole}</p>
+      {/* Footer */}
+      <div className="sidebar-footer">
+        <div className="user-row">
+          <div className="user-avatar">{initials}</div>
+          <div>
+            <div className="user-name">{admin}</div>
+            <div className="user-role">Administrateur local</div>
+          </div>
         </div>
       </div>
     </div>

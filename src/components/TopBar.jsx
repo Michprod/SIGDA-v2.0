@@ -1,77 +1,120 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAppState } from '../context/StateContext';
-import { Icon, StatutBadge } from './Common';
+
+const PAGE_TITLES = {
+  '/dashboard':  'Dashboard',
+  '/periode':    'Période en cours',
+  '/stocks':     'Stocks',
+  '/vendeurs':   'Vendeurs',
+  '/caisse':     'Caisse',
+  '/historique': 'Historique des périodes',
+  '/sites':      'Tous les sites',
+  '/audit':      'Journal d\'audit',
+};
+
+const STATUT_CONF = {
+  OUVERTE:     { bg: '#DCFCE7', color: '#166534', label: '⬤ Journée OUVERTE' },
+  EN_CLOTURE:  { bg: '#FEF3C7', color: '#92400E', label: '⏳ EN CLÔTURE'      },
+  CLOTUREE:    { bg: '#DBEAFE', color: '#1E40AF', label: '🔓 CLÔTURÉE'         },
+  VERROUILLEE: { bg: '#F3F4F6', color: '#374151', label: '🔒 VERROUILLÉE'      },
+};
 
 const TopBar = () => {
-  const { state, dispatch } = useAppState();
-  const isLocked = state.periode.statut === 'CLOTUREE' || state.periode.statut === 'VERROUILLEE';
+  const { state } = useAppState();
+  const location  = useLocation();
 
-  const handleReset = () => {
-    if (window.confirm("Cette action réinitialisera toutes les données SIGDA. Continuer ?")) {
-      dispatch({ type: 'RESET_STATE' });
-      window.location.reload();
-    }
-  };
+  const title  = PAGE_TITLES[location.pathname] || 'SIGDA';
+  const admin  = state.periode?.admin || 'Admin';
+  const inits  = admin.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const sc     = STATUT_CONF[state.periode?.statut] || STATUT_CONF.OUVERTE;
+
+  const dateLabel = state.periode?.date
+    ? new Date(state.periode.date + 'T00:00:00').toLocaleDateString('fr-FR', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      })
+    : '—';
 
   return (
-    <header className="w-full h-16 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 md:px-8 z-40 shadow-sm border-b border-slate-100 flex-shrink-0">
-      
-      {/* Mobile left side: Logo (since sidebar is hidden) */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <div className="h-8 w-8 bg-[#1A3A6B] rounded-lg flex items-center justify-center text-white">
-          <Icon name="inventory" className="text-sm" fill={true} />
-        </div>
-        <h1 className="text-lg font-black tracking-tighter text-[#002451]">SIGDA</h1>
-      </div>
+    <header style={{
+      height: 52, background: '#fff', borderBottom: '1px solid #E5E7EB',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 20px', flexShrink: 0, gap: 12,
+    }}>
+      {/* Gauche */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Mobile : nom appli */}
+        <span style={{ fontWeight: 800, fontSize: 15, color: '#1F2937', display: 'block' }}
+          className="lg-hide-if-sidebar">
+          SIGDA
+        </span>
 
-      {/* Desktop left side: Date and Info */}
-      <div className="hidden lg:flex items-center gap-6">
-        <div className="flex items-center gap-2 text-slate-600">
-          <Icon name="calendar_month" className="text-[#1A3A6B] text-xl" />
-          <span className="font-semibold text-sm text-slate-700">{state.periode.date}</span>
-        </div>
-        <StatutBadge statut={state.periode.statut} />
-        <div className="h-5 w-px bg-slate-200"></div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg text-sm text-slate-600">
-          <Icon name="location_on" className="text-sm" />
-          <span className="font-semibold text-xs">{state.periode.site}</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 md:gap-3">
-        {/* Mobile: Just status badge if space allows, or hiding the date */}
-        <div className="lg:hidden flex items-center mr-1">
-           <StatutBadge statut={state.periode.statut} />
+        {/* Desktop : titre + date + statut */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="topbar-desktop">
+          <span style={{ fontSize: 15, fontWeight: 600, color: '#1F2937' }}>{title}</span>
+          <span style={{ width: 1, height: 16, background: '#E5E7EB', display: 'inline-block' }} />
+          <span style={{ fontSize: 12, color: '#6B7280' }}>{dateLabel}</span>
         </div>
 
-        {isLocked && (
-          <Link
-            to="/rapports"
-            className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow hover:bg-emerald-700 transition-colors"
-          >
-            <Icon name="download" className="text-sm" />
-            <span className="hidden md:inline">Télécharger PDF</span>
-          </Link>
+        {/* Statut — toujours visible */}
+        {state.periode && (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', padding: '3px 10px',
+            borderRadius: 20, fontSize: 11, fontWeight: 500,
+            background: sc.bg, color: sc.color,
+          }}>
+            {sc.label}
+          </span>
         )}
-        
-        <button
-          onClick={handleReset}
-          className="relative p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-          title="Réinitialiser la démo"
+      </div>
+
+      {/* Droite */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Notifications */}
+        <button style={{
+          width: 32, height: 32, borderRadius: 8, border: '1px solid #E5E7EB',
+          background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: '#6B7280',
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>notifications</span>
+        </button>
+
+        {/* Aide */}
+        <button style={{
+          width: 32, height: 32, borderRadius: 8, border: '1px solid #E5E7EB',
+          background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: '#6B7280',
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>help_outline</span>
+        </button>
+
+        <div style={{ width: 1, height: 22, background: '#E5E7EB', margin: '0 4px' }} />
+
+        {/* Logout */}
+        <button 
+          onClick={() => {
+            localStorage.removeItem('sigda_token');
+            window.location.href = '/login';
+          }}
+          style={{
+            width: 32, height: 32, borderRadius: 8, border: '1px solid #FEE2E2',
+            background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: '#C0392B',
+          }}
+          title="Déconnexion"
         >
-          <Icon name="restart_alt" className="text-sm md:text-base" />
+          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>logout</span>
         </button>
 
-        <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all hidden md:flex">
-          <Icon name="notifications" className="text-sm md:text-base" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-
-        <div className="flex items-center gap-2 pl-2 md:pl-3 border-l border-slate-200">
-          <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#1A3A6B] flex items-center justify-center text-white text-xs md:text-sm font-bold">
-            {state.periode.admin.split(' ').map(n => n[0]).join('')}
-          </div>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%', background: '#1A3A6B',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontSize: 11, fontWeight: 700, flexShrink: 0,
+          cursor: 'default',
+        }}
+          title={admin}
+        >
+          {inits}
         </div>
       </div>
     </header>

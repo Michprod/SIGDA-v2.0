@@ -1,0 +1,473 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary);background:transparent;}
+.wrap{padding:1rem 0;}
+.tabs{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.tab{padding:6px 14px;font-size:13px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;color:var(--color-text-secondary);background:var(--color-background-primary);transition:all .15s;}
+.tab.active{background:#1A3A6B;color:#fff;border-color:#1A3A6B;}
+.tab:hover:not(.active){background:var(--color-background-secondary);}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* ERD STYLES */
+#erd-wrap{overflow-x:auto;}
+#erd svg{max-width:100%;}
+.erd-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--color-text-secondary);margin-top:12px;}
+.erd-legend span{display:flex;align-items:center;gap:5px;}
+.erd-dot{width:10px;height:10px;border-radius:2px;}
+
+/* FLOW */
+.flow-wrap{overflow-x:auto;}
+.info-box{padding:10px 14px;border-radius:8px;border-left:3px solid #1A3A6B;background:var(--color-background-secondary);font-size:12px;color:var(--color-text-secondary);line-height:1.7;margin-bottom:14px;}
+.info-box strong{color:var(--color-text-primary);font-weight:500;}
+
+/* FORMULAS */
+.formula-section{margin-bottom:20px;}
+.formula-title{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:0.5px solid var(--color-border-tertiary);}
+.formula-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:8px;padding:12px 14px;margin-bottom:8px;}
+.formula-name{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;}
+.formula-eq{font-family:var(--font-mono);font-size:12px;color:#1A3A6B;background:#EEF3FB;padding:8px 12px;border-radius:6px;line-height:1.6;}
+.formula-note{font-size:11px;color:var(--color-text-tertiary);margin-top:5px;line-height:1.5;}
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:520px){.rule-grid{grid-template-columns:1fr;}}
+.rule-item{padding:10px 12px;border-radius:8px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);}
+.rule-head{font-size:12px;font-weight:500;color:var(--color-text-primary);display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.rule-body{font-size:11px;color:var(--color-text-secondary);line-height:1.6;}
+
+/* TABLES */
+.table-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:520px){.table-grid{grid-template-columns:1fr;}}
+.table-card{border:0.5px solid var(--color-border-secondary);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.table-card:hover{border-color:var(--color-border-primary);}
+.table-card.selected{border-color:#2D6FAD;border-width:1.5px;}
+.table-head{padding:10px 12px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;}
+.table-name{font-size:13px;font-weight:600;color:var(--color-text-primary);}
+.table-role{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;}
+.role-pivot{background:#DBEAFE;color:#1E40AF;}
+.role-op{background:#DCFCE7;color:#166534;}
+.role-audit{background:#FEF3C7;color:#92400E;}
+.table-fields{padding:10px 12px;}
+.field-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;}
+.field-key{font-family:var(--font-mono);color:var(--color-text-primary);}
+.field-type{color:var(--color-text-tertiary);font-size:10px;}
+.field-tag{padding:1px 6px;border-radius:10px;font-size:10px;}
+.pk{background:#FEF3C7;color:#92400E;}
+.fk{background:#DCFCE7;color:#166534;}
+.field-desc{color:var(--color-text-secondary);font-size:10px;margin-left:auto;}
+.table-detail{margin-top:12px;padding:12px 14px;border-radius:8px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);font-size:12px;line-height:1.7;color:var(--color-text-secondary);display:none;}
+.table-detail.show{display:block;}
+.table-detail h4{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;}
+.table-detail ul{padding-left:1rem;}
+.table-detail li{margin-bottom:3px;}
+</style>
+
+<div class="wrap">
+<div class="tabs">
+  <div class="tab active" onclick="showTab('erd')">Schéma BDD</div>
+  <div class="tab" onclick="showTab('flow')">Flux clôture</div>
+  <div class="tab" onclick="showTab('formulas')">Formules métier</div>
+  <div class="tab" onclick="showTab('tables')">Tables détaillées</div>
+</div>
+
+<!-- PANEL 1: ERD -->
+<div id="panel-erd" class="panel active">
+  <div class="info-box"><strong>Table pivot :</strong> <code>accounting_periods</code> est la clé de voûte. Chaque enregistrement opérationnel porte un <code>period_id</code> — c'est ce lien qui rend le verrouillage temporel possible. Cliquez sur une table pour voir ses relations.</div>
+  <div id="erd-wrap"></div>
+  <div class="erd-legend">
+    <span><span class="erd-dot" style="background:#1E40AF;"></span>Table pivot</span>
+    <span><span class="erd-dot" style="background:#166534;"></span>Tables opérationnelles</span>
+    <span><span class="erd-dot" style="background:#92400E;"></span>Tables d'audit</span>
+    <span><span class="erd-dot" style="background:#6B7280;"></span>Référentiels</span>
+  </div>
+</div>
+
+<!-- PANEL 2: FLOW -->
+<div id="panel-flow" class="panel">
+  <div class="info-box"><strong>Règle fondamentale :</strong> le processus est <strong>séquentiel et irréversible</strong> une fois confirmé. Chaque étape cristallise une couche de données. En cas de panne entre l'étape 03 et 05, la transaction entière est annulée (ROLLBACK).</div>
+  <div id="flow-wrap"></div>
+</div>
+
+<!-- PANEL 3: FORMULAS -->
+<div id="panel-formulas" class="panel">
+  <div class="formula-section">
+    <div class="formula-title">Stocks</div>
+    <div class="formula-card">
+      <div class="formula-name">Stock de clôture (cristallisé à l'étape 01)</div>
+      <div class="formula-eq">closing_stock = opening_stock + supply_qty + total_returned − total_issued</div>
+      <div class="formula-note">Calculé par produit et par site. Reporté en opening_stock(J+1) lors de la transaction atomique.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-name">Prérequis équilibre stock (bloquant)</div>
+      <div class="formula-eq">total_issued = total_sold + total_returned + shrinkage</div>
+      <div class="formula-note">Toute unité dotée doit être comptabilisée. Aucune quantité en suspens non justifiée.</div>
+    </div>
+  </div>
+  <div class="formula-section">
+    <div class="formula-title">Vendeurs &amp; Rémunération</div>
+    <div class="formula-card">
+      <div class="formula-name">Ventes réelles vendeur</div>
+      <div class="formula-eq">qty_sold = qty_issued − qty_returned</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-name">Commission par session</div>
+      <div class="formula-eq">commission = (qty_sold × unit_price) × (taux / 100)</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-name">Écart de caisse vendeur</div>
+      <div class="formula-eq">cash_gap = MAX(0, expected_cash − actual_cash)</div>
+      <div class="formula-note">L'écart ne peut être que défavorable (manque). Un excédent est noté mais ne génère pas d'écart positif.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-name">Rémunération nette (cristallisée à l'étape 02)</div>
+      <div class="formula-eq">net_pay = MAX(0, Σ(commissions) − Σ(écarts défavorables))</div>
+      <div class="formula-note">Ne peut jamais être négative. Si Σécarts &gt; Σcommissions, l'excédent est signalé au gestionnaire.</div>
+    </div>
+  </div>
+  <div class="formula-section">
+    <div class="formula-title">Caisse</div>
+    <div class="formula-card">
+      <div class="formula-name">Solde théorique</div>
+      <div class="formula-eq">theoretical = opening_balance + Σ(entrées) − Σ(sorties)</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-name">Écart de caisse global (cristallisé à l'étape 03)</div>
+      <div class="formula-eq">cash_gap = theoretical_balance − physical_balance</div>
+      <div class="formula-note">Si gap ≠ 0, une opération de régularisation is_regularization=true est créée automatiquement.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-name">Report solde ouverture J+1</div>
+      <div class="formula-eq">opening_balance(J+1) = physical_balance(J) // jamais le théorique</div>
+      <div class="formula-note">Garantit que le solde reporté est le solde réel compté, pas un solde calculé potentiellement erroné.</div>
+    </div>
+  </div>
+  <div class="formula-section">
+    <div class="formula-title">Règles critiques de verrouillage</div>
+    <div class="rule-grid">
+      <div class="rule-item"><div class="rule-head"><span>🔒</span> Une période par site</div><div class="rule-body">Contrainte UNIQUE (site_id, period_date) sur accounting_periods. Impossible d'avoir deux journées ouvertes simultanément.</div></div>
+      <div class="rule-item"><div class="rule-head"><span>⚛️</span> Transaction atomique</div><div class="rule-body">BEGIN … COMMIT sur la clôture J + création J+1. En cas d'échec partiel, ROLLBACK total. Pas d'état intermédiaire possible.</div></div>
+      <div class="rule-item"><div class="rule-head"><span>📄</span> PDF immuable</div><div class="rule-body">Généré par Puppeteer, hash SHA-256, stocké S3 en lecture seule. Ni régénérable ni modifiable après archivage.</div></div>
+      <div class="rule-item"><div class="rule-head"><span>🔓</span> Déverrouillage tracé</div><div class="rule-body">Seul le Super Admin peut déverrouiller une période CLOTUREE. Justification obligatoire. Chaque opération est dans admin_unlock_log avec horodatage.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 4: TABLES -->
+<div id="panel-tables" class="panel">
+  <div class="table-grid" id="tables-grid"></div>
+  <div class="table-detail" id="table-detail"></div>
+</div>
+</div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false, theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark, fontSize: '12px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#1e3a5f' : '#EEF3FB',
+    primaryTextColor: dark ? '#b5d4f4' : '#0C447C',
+    primaryBorderColor: dark ? '#2D6FAD' : '#2D6FAD',
+    secondaryColor: dark ? '#1a3d28' : '#E1F5EE',
+    tertiaryColor: dark ? '#3d2e0a' : '#FEF3C7',
+  }
+});
+
+const erdSrc = `erDiagram
+  accounting_periods {
+    UUID id PK
+    UUID site_id FK
+    DATE period_date
+    ENUM status
+    TIMESTAMP opened_at
+    UUID closed_by FK
+    DECIMAL physical_cash_balance
+    DECIMAL cash_gap_amount
+    VARCHAR closure_report_path
+    INTEGER unlock_count
+  }
+  sites {
+    UUID id PK
+    VARCHAR name
+    VARCHAR city
+    BOOLEAN is_active
+  }
+  users {
+    UUID id PK
+    UUID site_id FK
+    VARCHAR name
+    ENUM role
+  }
+  daily_stock_snapshots {
+    UUID id PK
+    UUID period_id FK
+    UUID product_id FK
+    INTEGER opening_stock
+    INTEGER supply_qty
+    INTEGER total_issued
+    INTEGER total_returned
+    INTEGER total_sold
+    INTEGER shrinkage
+    INTEGER closing_stock
+    BOOLEAN is_finalized
+  }
+  vendor_daily_sessions {
+    UUID id PK
+    UUID period_id FK
+    UUID vendor_id FK
+    UUID product_id FK
+    INTEGER qty_issued
+    INTEGER qty_returned
+    INTEGER qty_sold
+    DECIMAL expected_cash
+    DECIMAL actual_cash
+    DECIMAL cash_gap
+    DECIMAL commission_earned
+    DECIMAL net_pay
+    ENUM session_status
+    BOOLEAN is_finalized
+  }
+  cash_snapshots {
+    UUID id PK
+    UUID period_id FK
+    DECIMAL opening_balance
+    DECIMAL total_inflows
+    DECIMAL total_outflows
+    DECIMAL theoretical_balance
+    DECIMAL physical_balance
+    DECIMAL cash_gap
+    DECIMAL frozen_funds
+    BOOLEAN is_finalized
+  }
+  cash_transactions {
+    UUID id PK
+    UUID period_id FK
+    ENUM flow_type
+    ENUM direction
+    DECIMAL amount
+    VARCHAR label
+    UUID vendor_session_id FK
+    BOOLEAN is_regularization
+  }
+  closure_checklist_log {
+    UUID id PK
+    UUID period_id FK
+    VARCHAR check_code
+    ENUM status
+    TEXT detail
+    TIMESTAMP checked_at
+  }
+  admin_unlock_log {
+    UUID id PK
+    UUID period_id FK
+    UUID unlocked_by FK
+    TIMESTAMP unlocked_at
+    TEXT reason
+  }
+  products {
+    UUID id PK
+    VARCHAR name
+    DECIMAL unit_price
+    INTEGER alert_threshold
+  }
+  vendors {
+    UUID id PK
+    UUID site_id FK
+    VARCHAR name
+    DECIMAL commission_rate
+  }
+
+  accounting_periods }o--|| sites : "appartient à"
+  accounting_periods }o--|| users : "signé par"
+  daily_stock_snapshots }o--|| accounting_periods : "rattaché"
+  daily_stock_snapshots }o--|| products : "produit"
+  vendor_daily_sessions }o--|| accounting_periods : "rattaché"
+  vendor_daily_sessions }o--|| vendors : "vendeur"
+  vendor_daily_sessions }o--|| products : "produit"
+  cash_snapshots }o--|| accounting_periods : "rattaché"
+  cash_transactions }o--|| accounting_periods : "rattaché"
+  cash_transactions }o--o| vendor_daily_sessions : "si flux produit"
+  closure_checklist_log }o--|| accounting_periods : "période"
+  admin_unlock_log }o--|| accounting_periods : "période"
+  admin_unlock_log }o--|| users : "super admin"
+  vendors }o--|| sites : "site"
+`;
+
+try {
+  const { svg } = await mermaid.render('erd-diagram', erdSrc);
+  document.getElementById('erd-wrap').innerHTML = svg;
+  document.querySelectorAll('#erd-wrap svg .node').forEach(n => {
+    const fp = n.querySelector('path[d]');
+    if (!fp) return;
+    const d = fp.getAttribute('d');
+    const nums = d.match(/-?[\d.]+/g)?.map(Number);
+    if (!nums || nums.length < 8) return;
+    const xs = [nums[0],nums[2],nums[4],nums[6]], ys = [nums[1],nums[3],nums[5],nums[7]];
+    const x=Math.min(...xs), y=Math.min(...ys), w=Math.max(...xs)-x, h=Math.max(...ys)-y;
+    const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width',w); r.setAttribute('height',h); r.setAttribute('rx','8');
+    for(const a of ['fill','stroke','stroke-width','class','style']) if(fp.hasAttribute(a)) r.setAttribute(a,fp.getAttribute(a));
+    fp.replaceWith(r);
+  });
+} catch(e) { document.getElementById('erd-wrap').innerHTML = '<p style="color:var(--color-text-secondary);font-size:12px;padding:12px;">Chargement du schéma…</p>'; }
+
+// FLOW DIAGRAM
+const flowSvg = `<svg width="100%" viewBox="0 0 680 820" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Flux de clôture SIGDA en 5 étapes</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Prérequis -->
+<g class="c-blue"><rect x="60" y="20" width="560" height="52" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="43" text-anchor="middle" dominant-baseline="central">Vérification des prérequis (9 conditions)</text>
+<text class="ts" x="340" y="61" text-anchor="middle" dominant-baseline="central">verifier_prereqs_cloture(period_id) → peut_cloturer: vrai/faux</text></g>
+
+<!-- Branch OK -->
+<line x1="340" y1="72" x2="340" y2="102" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+<text class="ts" x="356" y="90" dominant-baseline="central" style="fill:#166534">✓ OK</text>
+
+<!-- Passage EN_CLOTURE -->
+<g class="c-amber"><rect x="160" y="102" width="360" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="120" text-anchor="middle" dominant-baseline="central">Passage statut → EN_CLÔTURE</text>
+<text class="ts" x="340" y="136" text-anchor="middle" dominant-baseline="central">Saisies suspendues · closing_initiated_at = NOW()</text></g>
+
+<line x1="340" y1="146" x2="340" y2="166" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+
+<!-- TRANSACTION BEGIN -->
+<rect x="200" y="166" width="280" height="26" rx="4" fill="none" stroke="var(--color-border-secondary)" stroke-dasharray="4 3" stroke-width="0.5"/>
+<text class="ts" x="340" y="179" text-anchor="middle" dominant-baseline="central" style="fill:var(--color-text-tertiary)">BEGIN TRANSACTION (atomique)</text>
+
+<!-- Step 01 -->
+<line x1="340" y1="192" x2="340" y2="210" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+<g class="c-teal"><rect x="80" y="210" width="520" height="56" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="232" text-anchor="middle" dominant-baseline="central">Étape 01 — Cristallisation des stocks</text>
+<text class="ts" x="340" y="250" text-anchor="middle" dominant-baseline="central">closing_stock = opening + supply + returned − issued · is_finalized = true</text></g>
+
+<line x1="340" y1="266" x2="340" y2="286" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+
+<!-- Step 02 -->
+<g class="c-teal"><rect x="80" y="286" width="520" height="56" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="308" text-anchor="middle" dominant-baseline="central">Étape 02 — Cristallisation vendeurs</text>
+<text class="ts" x="340" y="326" text-anchor="middle" dominant-baseline="central">net_pay = MAX(0, Σcommissions − Σécarts) · sessions is_finalized = true</text></g>
+
+<line x1="340" y1="342" x2="340" y2="362" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+
+<!-- Step 03 -->
+<g class="c-amber"><rect x="80" y="362" width="520" height="56" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="384" text-anchor="middle" dominant-baseline="central">Étape 03 — Arrêté de caisse physique</text>
+<text class="ts" x="340" y="402" text-anchor="middle" dominant-baseline="central">cash_gap = theoretical − physical · si gap≠0 → régularisation auto</text></g>
+
+<line x1="340" y1="418" x2="340" y2="438" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+
+<!-- Step 04 -->
+<g class="c-gray"><rect x="80" y="438" width="520" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="456" text-anchor="middle" dominant-baseline="central">Étape 04 — Génération rapport PDF</text>
+<text class="ts" x="340" y="472" text-anchor="middle" dominant-baseline="central">Puppeteer · hash SHA-256 · archivé S3 en lecture seule</text></g>
+
+<line x1="340" y1="482" x2="340" y2="502" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+
+<!-- Step 05 -->
+<g class="c-coral"><rect x="80" y="502" width="520" height="56" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="524" text-anchor="middle" dominant-baseline="central">Étape 05 — Signature admin + verrouillage</text>
+<text class="ts" x="340" y="542" text-anchor="middle" dominant-baseline="central">status = CLOTUREE · closed_at = NOW() · closed_by = admin_id</text></g>
+
+<line x1="340" y1="558" x2="340" y2="578" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+
+<!-- Report J+1 -->
+<g class="c-green"><rect x="80" y="578" width="520" height="56" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="600" text-anchor="middle" dominant-baseline="central">Report atomique → Ouverture J+1</text>
+<text class="ts" x="340" y="618" text-anchor="middle" dominant-baseline="central">opening_stock(J+1) = closing_stock(J) · opening_balance(J+1) = physical_balance(J)</text></g>
+
+<line x1="340" y1="634" x2="340" y2="654" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+
+<!-- COMMIT -->
+<rect x="200" y="654" width="280" height="26" rx="4" fill="none" stroke="#166534" stroke-dasharray="4 3" stroke-width="0.5"/>
+<text class="ts" x="340" y="667" text-anchor="middle" dominant-baseline="central" style="fill:#166534">COMMIT — transaction réussie</text>
+
+<!-- Notification -->
+<line x1="340" y1="680" x2="340" y2="700" stroke="var(--color-border-primary)" stroke-width="1" marker-end="url(#arr)"/>
+<g class="c-gray"><rect x="200" y="700" width="280" height="36" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="718" text-anchor="middle" dominant-baseline="central">Notification Super Admin</text></g>
+
+<!-- ROLLBACK path (left side) -->
+<line x1="80" y1="600" x2="40" y2="600" stroke="var(--color-border-secondary)" stroke-width="0.5"/>
+<line x1="40" y1="600" x2="40" y2="400" stroke="var(--color-border-secondary)" stroke-width="0.5"/>
+<line x1="40" y1="400" x2="38" y2="192" stroke="var(--color-border-secondary)" stroke-width="0.5"/>
+<text class="ts" x="24" y="400" text-anchor="middle" dominant-baseline="central" style="writing-mode:tb;fill:var(--color-text-tertiary);">ROLLBACK si panne</text>
+
+<!-- PREREQS FAIL path -->
+<line x1="340" y1="72" x2="570" y2="72" stroke="var(--color-border-secondary)" stroke-width="0.5"/>
+<line x1="570" y1="72" x2="570" y2="120" stroke="var(--color-border-secondary)" stroke-width="0.5"/>
+<g class="c-red"><rect x="490" y="106" width="160" height="36" rx="6" stroke-width="0.5"/>
+<text class="th" x="570" y="124" text-anchor="middle" dominant-baseline="central">Bloqué</text></g>
+<text class="ts" x="586" y="90" dominant-baseline="central" style="fill:#991B1B">✗ KO</text>
+</svg>`;
+document.getElementById('flow-wrap').innerHTML = flowSvg;
+
+// TABLES DATA
+const tables = [
+  { id:'ap', name:'accounting_periods', role:'pivot', roleLabel:'Table pivot',
+    fields:[{n:'id',t:'UUID',tag:'pk'},{n:'site_id',t:'UUID',tag:'fk'},{n:'period_date',t:'DATE',desc:'Unique/site'},{n:'status',t:'ENUM',desc:'4 états'},{n:'opened_at',t:'TIMESTAMP'},{n:'closed_by',t:'UUID',tag:'fk'},{n:'physical_cash_balance',t:'DECIMAL',desc:'Étape 03'},{n:'unlock_count',t:'INTEGER',desc:'Audit'}],
+    detail:'<h4>Rôle pivot</h4><p>Toutes les tables opérationnelles portent un <code>period_id</code> FK vers cette table. C\'est le mécanisme qui rend le verrouillage par période possible.</p><ul><li>Contrainte UNIQUE (site_id, period_date) — une seule journée par site.</li><li>La machine à états est enforcement applicatif + contrainte de transition en BDD.</li><li>unlock_count est audité — visible dans la vue Super Admin.</li></ul>'
+  },
+  { id:'dss', name:'daily_stock_snapshots', role:'op', roleLabel:'Opérationnel',
+    fields:[{n:'period_id',t:'UUID',tag:'fk'},{n:'product_id',t:'UUID',tag:'fk'},{n:'opening_stock',t:'INT',desc:'Reporté J-1'},{n:'supply_qty',t:'INT'},{n:'total_issued',t:'INT',desc:'Dotations'},{n:'total_returned',t:'INT'},{n:'total_sold',t:'INT',desc:'Calculé'},{n:'closing_stock',t:'INT',desc:'Étape 01'},{n:'is_finalized',t:'BOOL'}],
+    detail:'<h4>Cycle stock circulaire</h4><p>Un snapshot par produit et par période. Le champ <code>is_finalized</code> est passé à true lors de l\'étape 01 de la clôture — le stock devient en lecture seule.</p><ul><li>Prérequis : total_issued = total_sold + total_returned + shrinkage.</li><li>closing_stock = opening + supply + returned − issued.</li><li>opening_stock(J+1) = closing_stock(J) — report atomique.</li></ul>'
+  },
+  { id:'vds', name:'vendor_daily_sessions', role:'op', roleLabel:'Opérationnel',
+    fields:[{n:'period_id',t:'UUID',tag:'fk'},{n:'vendor_id',t:'UUID',tag:'fk'},{n:'qty_issued',t:'INT'},{n:'qty_returned',t:'INT'},{n:'expected_cash',t:'DECIMAL'},{n:'actual_cash',t:'DECIMAL'},{n:'cash_gap',t:'DECIMAL',desc:'Écart'},{n:'commission_earned',t:'DECIMAL'},{n:'net_pay',t:'DECIMAL'},{n:'session_status',t:'ENUM',desc:'4 statuts'},{n:'is_finalized',t:'BOOL'}],
+    detail:'<h4>Statuts bloquants</h4><ul><li><strong>EN_ATTENTE</strong> — retour manquant. Bloque la clôture.</li><li><strong>PARTIELLE</strong> — encaissement non confirmé. Bloque la clôture.</li><li><strong>RECONCILIEE</strong> — prérequis satisfait.</li><li><strong>SANS_ACTIVITE</strong> — neutre.</li></ul><p style="margin-top:6px;">net_pay = MAX(0, Σcommissions − Σécarts). Jamais négatif.</p>'
+  },
+  { id:'cs', name:'cash_snapshots', role:'op', roleLabel:'Opérationnel',
+    fields:[{n:'period_id',t:'UUID',tag:'fk'},{n:'opening_balance',t:'DECIMAL',desc:'Reporté J-1'},{n:'total_inflows',t:'DECIMAL'},{n:'total_outflows',t:'DECIMAL'},{n:'theoretical_balance',t:'DECIMAL'},{n:'physical_balance',t:'DECIMAL',desc:'Saisi étape 03'},{n:'cash_gap',t:'DECIMAL'},{n:'frozen_funds',t:'DECIMAL'},{n:'is_finalized',t:'BOOL'}],
+    detail:'<h4>Arrêté physique</h4><p>La distinction théorique/physique est fondamentale : le solde reporté en ouverture J+1 est toujours le solde physique compté par le gestionnaire — jamais le théorique calculé. Tout écart génère une transaction de régularisation.</p>'
+  },
+  { id:'ct', name:'cash_transactions', role:'op', roleLabel:'Opérationnel',
+    fields:[{n:'period_id',t:'UUID',tag:'fk'},{n:'flow_type',t:'ENUM',desc:'produit/hors_produit'},{n:'direction',t:'ENUM',desc:'entrée/sortie'},{n:'amount',t:'DECIMAL'},{n:'label',t:'VARCHAR'},{n:'vendor_session_id',t:'UUID',tag:'fk',desc:'si produit'},{n:'is_regularization',t:'BOOL'}],
+    detail:'<h4>Flux Produit vs Hors-Produit</h4><ul><li><strong>Produit</strong> : alimenté automatiquement par la réconciliation vendeur. Lié à une session via vendor_session_id.</li><li><strong>Hors-Produit</strong> : toute opération hors vente — libellé obligatoire.</li><li><strong>Régularisation</strong> : créée automatiquement si cash_gap ≠ 0 à l\'étape 03.</li></ul>'
+  },
+  { id:'aul', name:'admin_unlock_log', role:'audit', roleLabel:'Audit',
+    fields:[{n:'period_id',t:'UUID',tag:'fk'},{n:'unlocked_by',t:'UUID',tag:'fk'},{n:'unlocked_at',t:'TIMESTAMP'},{n:'reason',t:'TEXT',desc:'Obligatoire'},{n:'re_locked_at',t:'TIMESTAMP'}],
+    detail:'<h4>Journal de déverrouillage</h4><p>Chaque déverrouillage par Super Admin est tracé ici de manière indélébile. La colonne <code>reason</code> est non nullable — la justification est obligatoire avant toute action. Le compteur <code>unlock_count</code> sur la période est également incrémenté.</p>'
+  },
+];
+
+function renderTables() {
+  const grid = document.getElementById('tables-grid');
+  grid.innerHTML = tables.map(t => {
+    const rc = {pivot:'role-pivot',op:'role-op',audit:'role-audit'}[t.role];
+    const fields = t.fields.slice(0,6).map(f =>
+      `<div class="field-row"><span class="field-key">${f.n}</span><span class="field-type">${f.t}</span>${f.tag==='pk'?'<span class="field-tag pk">PK</span>':f.tag==='fk'?'<span class="field-tag fk">FK</span>':''}<span class="field-desc">${f.desc||''}</span></div>`
+    ).join('');
+    return `<div class="table-card" id="tc-${t.id}" onclick="selectTable('${t.id}')">
+      <div class="table-head"><span class="table-name">${t.name}</span><span class="table-role ${rc}">${t.roleLabel}</span></div>
+      <div class="table-fields">${fields}${t.fields.length>6?`<div class="field-row" style="color:var(--color-text-tertiary);font-size:11px;">+${t.fields.length-6} autres champs</div>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+window.selectTable = function(id) {
+  document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('tc-'+id).classList.add('selected');
+  const t = tables.find(x=>x.id===id);
+  const d = document.getElementById('table-detail');
+  d.className = 'table-detail show';
+  d.innerHTML = t.detail;
+};
+
+renderTables();
+</script>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>

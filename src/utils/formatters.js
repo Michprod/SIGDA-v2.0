@@ -3,7 +3,7 @@ export const fmt = (amount, decimals = 2) => {
 };
 
 export const fmtUSD = (amount, decimals = 2) => {
-  return '$' + fmt(Math.abs(amount), decimals);
+  return fmt(Math.abs(amount), decimals) + ' FC';
 };
 
 export const fmtUSDSigned = (amount) => {

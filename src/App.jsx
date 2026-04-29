@@ -1,78 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { StateProvider, useAppState } from './context/StateContext';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { StateProvider } from './context/StateContext';
 import Layout from './components/Layout';
+
+// Pages
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Stocks from './pages/Stocks';
 import Vendeurs from './pages/Vendeurs';
 import Caisse from './pages/Caisse';
-import Rapports from './pages/Rapports';
-import Network from './pages/Network';
+import Historique from './pages/Historique';
+import Periode from './pages/Periode';
+import Sites from './pages/Sites';
 import Audit from './pages/Audit';
-import { Icon } from './components/Common';
+import Configuration from './pages/Configuration';
+import VendeurHistorique from './pages/VendeurHistorique';
 
-const SplashScreen = ({ onFinish }) => {
-  useEffect(() => {
-    const timer = setTimeout(onFinish, 2500);
-    return () => clearTimeout(timer);
-  }, [onFinish]);
+import { Toaster } from 'react-hot-toast';
 
-  return (
-    <div className="fixed inset-0 z-[99999] bg-[#002451] flex flex-col items-center justify-center">
-      <div className="relative">
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#C9A227] to-[#a07d18] flex items-center justify-center shadow-2xl animate-bounce">
-          <Icon name="account_balance" className="text-white text-5xl" fill={true} />
-        </div>
-        <div className="absolute -inset-4 bg-[#C9A227]/20 rounded-full blur-2xl animate-pulse"></div>
-      </div>
-      <h1 className="text-white text-4xl font-black mt-10 tracking-tighter">
-        SIGDA <span className="text-[#C9A227]">v2.0</span>
-      </h1>
-      <p className="text-blue-300 text-xs font-bold uppercase tracking-[0.4em] mt-3 opacity-60">
-        Système Intégré de Gestion de Distribution
-      </p>
-      
-      <div className="mt-12 w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-        <div className="h-full bg-[#C9A227] animate-loading-bar"></div>
-      </div>
-      <p className="text-blue-200/40 text-[10px] font-bold mt-4 uppercase tracking-widest">Initialisation sécurisée...</p>
-    </div>
-  );
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('sigda_token');
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
 };
 
-const AppContent = () => {
-  const [showSplash, setShowSplash] = useState(true);
-  const { state } = useAppState();
-
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
-
-  return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/stocks" element={<Stocks />} />
-          <Route path="/vendeurs" element={<Vendeurs />} />
-          <Route path="/caisse" element={<Caisse />} />
-          <Route path="/rapports" element={<Rapports />} />
-          <Route path="/network" element={<Network />} />
-          <Route path="/audit" element={<Audit />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Layout>
-    </Router>
-  );
-};
-
-function App() {
+const App = () => {
   return (
     <StateProvider>
-      <AppContent />
+      <Toaster position="top-right" reverseOrder={false} />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          
+          <Route path="/" element={<ProtectedRoute><Layout><Navigate to="/dashboard" replace /></Layout></ProtectedRoute>} />
+          
+          <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+          <Route path="/periode"   element={<ProtectedRoute><Layout><Periode /></Layout></ProtectedRoute>} />
+          <Route path="/stocks"    element={<ProtectedRoute><Layout><Stocks /></Layout></ProtectedRoute>} />
+          <Route path="/vendeurs"  element={<ProtectedRoute><Layout><Vendeurs /></Layout></ProtectedRoute>} />
+          <Route path="/vendeurs/:id/historique" element={<ProtectedRoute><Layout><VendeurHistorique /></Layout></ProtectedRoute>} />
+          <Route path="/caisse"    element={<ProtectedRoute><Layout><Caisse /></Layout></ProtectedRoute>} />
+          <Route path="/historique" element={<ProtectedRoute><Layout><Historique /></Layout></ProtectedRoute>} />
+          <Route path="/sites"      element={<ProtectedRoute><Layout><Sites /></Layout></ProtectedRoute>} />
+          <Route path="/audit"      element={<ProtectedRoute><Layout><Audit /></Layout></ProtectedRoute>} />
+          <Route path="/configuration" element={<ProtectedRoute><Layout><Configuration /></Layout></ProtectedRoute>} />
+
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
     </StateProvider>
   );
-}
+};
 
 export default App;

@@ -1,144 +1,128 @@
 import React from 'react';
 import { useAppState } from '../context/StateContext';
 import { fmtUSD } from '../utils/formatters';
-import { Icon } from '../components/Common';
 
 const Rapports = () => {
   const { state } = useAppState();
 
   const typeConfig = {
-    'CLOTURE':    { icon: 'lock_clock',   label: 'Clôture Journalière', color: 'bg-blue-50 text-blue-700'       },
-    'HEBDO':      { icon: 'date_range',   label: 'Rapport Hebdomadaire', color: 'bg-purple-50 text-purple-700'  },
-    'AUDIT':      { icon: 'rule',         label: 'Rapport d\'Audit',     color: 'bg-amber-50 text-amber-700'    },
-    'CONFORMITE': { icon: 'verified_user',label: 'Conformité',           color: 'bg-emerald-50 text-emerald-700'},
+    'CLOTURE':    { icon: 'lock_clock',    label: 'Clôture Journalière', color: '#1A3A6B' },
+    'HEBDO':      { icon: 'date_range',    label: 'Rapport Hebdomadaire', color: '#7c6ef5' },
+    'AUDIT':      { icon: 'rule',          label: "Rapport d'Audit",      color: '#C9A227' },
+    'CONFORMITE': { icon: 'verified_user', label: 'Conformité',           color: '#2E7D52' },
   };
 
-  const statutConfig = {
-    'SIGNE':    { label: 'Signé',    bg: 'bg-emerald-100', text: 'text-emerald-700' },
-    'EN_COURS': { label: 'En cours', bg: 'bg-amber-100',   text: 'text-amber-700'   },
-  };
+  const totalCloture = (state.rapports || []).filter(r => r.type === 'CLOTURE' && r.statut === 'SIGNE').length;
+  const isCloturee   = state.periode?.statut === 'CLOTUREE';
 
-  const totalCloture = state.rapports.filter(r => r.type === 'CLOTURE' && r.statut === 'SIGNE').length;
+  const kpis = [
+    { label: 'Rapports Totaux',    value: (state.rapports || []).length,        sub: 'Générés à ce jour' },
+    { label: 'Journées Clôturées', value: totalCloture,                 sub: 'Toutes scellées' },
+    { label: 'CA Cumulé (30j)',    value: fmtUSD(totalCloture * 4170000),  sub: 'Volume total' },
+    { label: 'Journée Actuelle',   value: state.periode?.statut || 'OUVERTE',   sub: isCloturee ? 'Scellée' : 'En cours' },
+  ];
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-8">
-        <h2 className="text-2xl md:text-3xl font-black tracking-tight text-[#002451]">Rapports & Archives</h2>
-        <p className="text-slate-500 font-medium mt-1">Documents certifiés de la gestion journalière</p>
+    <div>
+      <div style={{ marginBottom: 20 }}>
+         <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A3A6B', margin: 0 }}>Rapports & Archives</h1>
+         <p style={{ fontSize: 13, color: '#6B7280', margin: '4px 0 0' }}>Documents certifiés de la gestion journalière</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-[#1A3A6B]">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rapports Totaux</p>
-          <p className="text-3xl font-black text-[#002451]">{state.rapports.length}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Journées Clôturées</p>
-          <p className="text-3xl font-black text-emerald-700">{totalCloture}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-[#C9A227]">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">CA Cumulé (30j)</p>
-          <p className="text-2xl font-black text-[#002451]">{fmtUSD(totalCloture * 4170)}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border-b-4 border-purple-400">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Journée Actuelle</p>
-          <p className={`text-sm font-black ${state.periode.statut === 'CLOTUREE' ? 'text-emerald-600' : 'text-amber-600'}`}>
-            {state.periode.statut}
-          </p>
-          {state.periode.statut !== 'CLOTUREE' ? (
-            <p className="text-xs text-slate-400 mt-1">En cours...</p>
-          ) : (
-            <p className="text-xs text-emerald-600 mt-1">✓ Scellée</p>
-          )}
-        </div>
-      </div>
-
-      {/* Rapport actuel si clôturé */}
-      {state.periode.statut === 'CLOTUREE' && (
-        <div className="mb-6 p-4 md:p-5 rounded-xl border-l-4 border-emerald-500 bg-emerald-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3">
-            <Icon name="verified" className="text-emerald-600 text-2xl mt-1 sm:mt-0" fill={true} />
-            <div>
-              <p className="font-bold text-emerald-800 text-sm md:text-base">Journée du {state.periode.date} clôturée et scellée</p>
-              <p className="text-xs text-emerald-600">Le rapport est disponible ci-dessous.</p>
-            </div>
+      {/* KPIs */}
+      <div className="kpi-grid">
+        {kpis.map((k, i) => (
+          <div key={i} className="kpi-card">
+            <div className="kpi-label">{k.label}</div>
+            <div className="kpi-value" style={{ fontSize: k.label.includes('Journée') ? 16 : 22 }}>{k.value}</div>
+            <div className="kpi-sub">{k.sub}</div>
           </div>
-          <button className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
-            <Icon name="download" className="text-sm" /> Télécharger PDF
-          </button>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Reports list */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-[#002451]">Historique des Rapports</h3>
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-xs font-bold text-slate-600 border border-slate-200 transition-colors">
-            <Icon name="filter_list" className="text-sm" /> Filtrer
+      {/* Report list */}
+      <div className="card">
+        <div className="card-head">
+          <div className="card-title">Historique des Rapports</div>
+          <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: 11 }}>
+             <span className="material-symbols-outlined" style={{ fontSize: 14 }}>filter_list</span>
+             Filtrer
           </button>
         </div>
-        
-        <div className="grid gap-3">
-          {state.rapports.map((r) => {
-            const tc = typeConfig[r.type] || typeConfig['CLOTURE'];
-            const sc = statutConfig[r.statut] || statutConfig['EN_COURS'];
-            const isSigned = r.statut === 'SIGNE';
-            return (
-              <div key={r.id} className="bg-white rounded-xl p-5 shadow-sm border border-slate-50 flex items-center gap-5 hover:shadow-md transition-shadow group">
-                <div className={`w-12 h-12 rounded-xl ${tc.color} flex items-center justify-center flex-shrink-0`}>
-                  <Icon name={tc.icon} className="text-2xl" fill={true} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-bold text-[#002451] truncate">{r.titre}</p>
-                    <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>
-                      {sc.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Icon name="calendar_today" className="text-xs" /> {r.date}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Icon name="folder" className="text-xs" /> {tc.label}
-                    </span>
-                    {r.taille !== '--' && (
-                      <span className="flex items-center gap-1">
-                        <Icon name="storage" className="text-xs" /> {r.taille}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  {isSigned && (
-                    <button className="p-2 hover:bg-emerald-50 rounded-lg transition-colors text-emerald-600">
-                      <Icon name="download" className="text-lg" />
-                    </button>
-                  )}
-                  <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-[#1A3A6B]">
-                    <Icon name="visibility" className="text-lg" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+        <div className="card-body" style={{ padding: 0 }}>
+            <table className="data-table">
+                <thead>
+                    <tr>
+                        <th style={{ width: 50 }}></th>
+                        <th>Titre du document</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Statut</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {(state.rapports || []).length === 0 ? (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: '#9CA3AF' }}>Aucun rapport archivé</td></tr>
+                    ) : (state.rapports || []).map((r) => {
+                        const tc = typeConfig[r.type] || typeConfig['CLOTURE'];
+                        const isSigned = r.statut === 'SIGNE';
+                        return (
+                            <tr key={r.id}>
+                                <td>
+                                    <div style={{ 
+                                        width: 32, height: 32, borderRadius: 8, background: '#F3F4F6',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: tc.color
+                                    }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{tc.icon}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style={{ fontWeight: 600 }}>{r.titre}</div>
+                                    <div style={{ fontSize: 10, color: '#9CA3AF' }}>ID: {r.id.slice(0, 8)}...</div>
+                                </td>
+                                <td>{r.date}</td>
+                                <td>{tc.label}</td>
+                                <td>
+                                    <span style={{ 
+                                        padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600,
+                                        background: isSigned ? '#DCFCE7' : '#FEF3C7',
+                                        color: isSigned ? '#166534' : '#92400E'
+                                    }}>
+                                        {isSigned ? 'SIGNÉ' : 'BROUILLON'}
+                                    </span>
+                                </td>
+                                <td style={{ textAlign: 'right' }}>
+                                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                        <button className="icon-btn" title="Voir"><span className="material-symbols-outlined" style={{ fontSize: 16 }}>visibility</span></button>
+                                        <button className="icon-btn" title="Télécharger"><span className="material-symbols-outlined" style={{ fontSize: 16 }}>download</span></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
         </div>
       </div>
 
-      {/* Encryption note */}
-      <div className="mt-8 p-6 rounded-2xl bg-[#EEF3FB] border border-blue-100/50">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-white/50 flex items-center justify-center text-[#1A3A6B]">
-            <Icon name="security" className="text-2xl" fill={true} />
+      {/* Security Note */}
+      <div style={{ 
+        marginTop: 20, padding: 16, borderRadius: 12, background: '#fff', border: '1px solid #E5E7EB',
+        display: 'flex', gap: 16, alignItems: 'center'
+      }}>
+          <div style={{ 
+            width: 44, height: 44, borderRadius: '50%', background: '#F3F4F6', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1A3A6B'
+          }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 24 }}>security</span>
           </div>
           <div>
-            <p className="text-sm font-bold text-[#002451]">Intégrité des Archives Garantie</p>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Tous les rapports signés sont horodatés et chiffrés via le protocole SIGDA-Vault (256-bit). Hash Blockchain : <span className="font-mono bg-white/50 px-1 rounded">0x4F2A...99C1</span>
-            </p>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Intégrité des Archives Garantie</div>
+              <p style={{ fontSize: 12, color: '#6B7280', marginTop: 2, margin: 0 }}>
+                  Tous les rapports signés sont horodatés et chiffrés. Toute modification ultérieure brisera la signature numérique du document.
+              </p>
           </div>
-        </div>
       </div>
     </div>
   );

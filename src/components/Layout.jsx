@@ -1,41 +1,74 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { useAppState } from '../context/StateContext';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import BottomNav from './BottomNav';
 import WizardOverlay from './WizardOverlay';
-import { useAppState } from '../context/StateContext';
+
+const BNAV = [
+  { path: '/dashboard',  icon: 'dashboard',             label: 'Accueil'   },
+  { path: '/stocks',     icon: 'inventory_2',            label: 'Stocks'    },
+  { path: '/vendeurs',   icon: 'groups',                 label: 'Vendeurs'  },
+  { path: '/caisse',     icon: 'account_balance_wallet', label: 'Caisse'    },
+  { path: '/historique', icon: 'history',                label: 'Historique'},
+];
 
 const Layout = ({ children }) => {
   const { state, dispatch } = useAppState();
 
-  const handleCloseWizard = () => {
-    dispatch({ type: 'SET_STATUT_PERIODE', payload: 'OUVERTE' });
-  };
+  /* ── Écran de chargement initial ── */
+  if (state.isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner" />
+        <p style={{ fontSize: 13, color: '#6B7280' }}>Connexion au serveur SIGDA...</p>
+      </div>
+    );
+  }
+
+  const isWizardOpen = state.periode?.statut === 'EN_CLOTURE';
+  const handleCloseWizard = () => dispatch({ type: 'SET_STATUT_PERIODE', payload: 'OUVERTE' });
+
+  const vendeursBloques = (state.vendeurs || []).filter(v => v.statut === 'EN_ATTENTE').length;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
+    <div className="app-shell">
+      {/* ── Sidebar desktop ── */}
+      <Sidebar />
 
-      {/* Sidebar — desktop only */}
-      <aside className="hidden lg:flex w-64 flex-shrink-0 h-screen overflow-y-auto bg-slate-50 border-r border-slate-100 z-50">
-        <Sidebar />
-      </aside>
-
-      {/* Main column */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* ── Colonne principale ── */}
+      <div className="main-col">
         <TopBar />
-        {/* pb-16 on mobile to clear bottom nav, lg:pb-0 for desktop */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
+        <main className="content-area">
           {children}
         </main>
       </div>
 
-      {/* Bottom nav — mobile only */}
-      <BottomNav />
+      {/* ── Bottom nav mobile ── */}
+      <nav className="bottom-nav">
+        {BNAV.map(item => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => `bnav-item${isActive ? ' active' : ''}`}
+          >
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              <span className="material-symbols-outlined nav-icon">{item.icon}</span>
+              {item.path === '/vendeurs' && vendeursBloques > 0 && (
+                <span style={{
+                  position: 'absolute', top: 0, right: -2,
+                  width: 7, height: 7, borderRadius: '50%', background: '#C0392B',
+                  border: '1px solid #fff',
+                }} />
+              )}
+            </div>
+            <span className="bnav-label">{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
 
-      {/* Wizard Overlay */}
-      {state.periode.statut === 'EN_CLOTURE' && (
-        <WizardOverlay onClose={handleCloseWizard} />
-      )}
+      {/* ── Wizard Clôture ── */}
+      {isWizardOpen && <WizardOverlay onClose={handleCloseWizard} />}
     </div>
   );
 };
