@@ -15,6 +15,7 @@ import Sites from './pages/Sites';
 import Audit from './pages/Audit';
 import Configuration from './pages/Configuration';
 import VendeurHistorique from './pages/VendeurHistorique';
+import ReportPrint from './pages/ReportPrint';
 
 import { Toaster } from 'react-hot-toast';
 
@@ -44,6 +45,9 @@ const App = () => {
           <Route path="/sites"      element={<ProtectedRoute><Layout><Sites /></Layout></ProtectedRoute>} />
           <Route path="/audit"      element={<ProtectedRoute><Layout><Audit /></Layout></ProtectedRoute>} />
           <Route path="/configuration" element={<ProtectedRoute><Layout><Configuration /></Layout></ProtectedRoute>} />
+          
+          {/* Vue impression - Pas de Layout */}
+          <Route path="/print/periode/:id" element={<ProtectedRoute><ReportPrint /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
