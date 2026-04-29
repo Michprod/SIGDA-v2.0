@@ -75,13 +75,22 @@ const Historique = () => {
                   </td>
                   <td style={{ color: '#6B7280' }}>{r.admin?.name || '—'}</td>
                   <td style={{ textAlign: 'right' }}>
-                    <button 
-                      onClick={() => handleDownload(r.id, r.date_exploitation)}
-                      style={{ fontSize: 11, color: '#2D6FAD', border: '1px solid #E5E7EB', padding: '4px 8px', borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: 15 }}>download</span>
-                      CSV
-                    </button>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <button 
+                        onClick={() => handleDownload(r.id, r.date_exploitation)}
+                        style={{ fontSize: 11, color: '#2D6FAD', border: '1px solid #E5E7EB', padding: '4px 8px', borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>download</span>
+                        CSV
+                      </button>
+                      <button 
+                        onClick={() => window.open(`/print/periode/${r.id}`, '_blank')}
+                        style={{ fontSize: 11, color: '#DC2626', border: '1px solid #FCA5A5', padding: '4px 8px', borderRadius: 6, background: '#FEF2F2', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>picture_as_pdf</span>
+                        PDF
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
